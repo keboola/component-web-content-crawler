@@ -5,4 +5,4 @@ __pycache__/
 # kbc datafolder
 data/
 
-src/sanbox.py
+src/sandbox.py
