@@ -1,4 +1,5 @@
 import abc
+import logging
 import random
 import time
 
@@ -46,6 +47,12 @@ class WaitForElement(CrawlerAction):
         wait = WebDriverWait(driver, self.delay)
         el = wait.until(ec.visibility_of_element_located((By.XPATH, self.xpath)))
         return el
+
+
+class PrintHtmlPage(CrawlerAction):
+    def execute(self, driver: webdriver, **extra_args):
+        html = driver.page_source
+        logging.info(html)
 
 
 # System actions
