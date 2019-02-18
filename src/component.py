@@ -3,11 +3,14 @@ Template Component main class.
 
 '''
 
+import json
 import logging
 
 from kbc.env_handler import KBCEnvHandler
+from nested_lookup import nested_lookup
 
-from webcrawler.selenium_crawler import *
+from webcrawler.selenium_crawler import CrawlerActionBuilder
+from webcrawler.selenium_crawler import GenericCrawler
 
 # configuration variables
 KEY_RANDOM_WAIT = 'random_wait_range'
@@ -58,6 +61,9 @@ class Component(KBCEnvHandler):
         Main execution code
         """
         crawler_steps = self.cfg_params[KEY_STEPS]
+
+        crawler_steps = self._fill_in_user_parameters(crawler_steps, self.cfg_params.get(KEY_USER_PARS))
+
         logging.info("Entering first step url %s", self.web_crawler.start_url)
         self.web_crawler.start()
 
@@ -65,6 +71,7 @@ class Component(KBCEnvHandler):
             logging.info(st.get(KEY_DESCRIPTION, ''))
             self._perform_crawler_actions(st.get(KEY_ACTIONS))
 
+        self.web_crawler.stop()
         logging.info("Extraction finished")
 
     def _perform_crawler_actions(self, actions):
@@ -72,6 +79,22 @@ class Component(KBCEnvHandler):
             logging.info(a.get(KEY_DESCRIPTION, ''))
             action = CrawlerActionBuilder.build(a[KEY_ACTION_NAME], **a.get(KEY_ACTION_PARAMETERS))
             self.web_crawler.perform_action(action)
+
+    def _fill_in_user_parameters(self, crawler_steps, user_param):
+        # convert to string minified
+        steps_string = json.dumps(crawler_steps, separators=(',', ':'))
+        # dirty and ugly replace
+        for key in user_param:
+            lookup_str = '{"attr":"' + key + '"}'
+            steps_string = steps_string.replace(lookup_str, '"' + str(user_param[key]) + '"')
+        new_steps = json.loads(steps_string)
+        non_matched = nested_lookup('attr', new_steps)
+
+        if non_matched:
+            raise ValueError(
+                'Some user attributes [{}] specified in configuration '
+                'are not present in "user_parameters" field.'.format(non_matched))
+        return new_steps
 
 
 """

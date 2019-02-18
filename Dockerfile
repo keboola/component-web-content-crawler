@@ -1,21 +1,27 @@
-FROM python:3.7.1-slim
+FROM python:3.7.1
 ENV PYTHONIOENCODING utf-8
 
 COPY . /code/
 
-# install gcc to be able to build packages - e.g. required by regex, dateparser, also required for pandas
-RUN apt-get update && apt-get install -y build-essential
+# install google chrome
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
+RUN sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+RUN apt-get -y update
+RUN apt-get install -y google-chrome-stable
+
+## install chrome webdriver
+RUN wget https://chromedriver.storage.googleapis.com/73.0.3683.20/chromedriver_linux64.zip
+RUN apt-get install unzip
+RUN unzip chromedriver_linux64.zip
+RUN mv chromedriver /usr/local/bin/
+
+# set display port to avoid crash
+ENV DISPLAY=:99
 
 RUN pip install flake8
 # process dependency links to install kds-team.keboola-util library
 RUN pip install --process-dependency-links -r /code/requirements.txt
 
-# install chrome webdriver
-RUN wget https://chromedriver.storage.googleapis.com/73.0.3683.20/chromedriver_linux64.zip
-RUN unzip chromedriver_linux64.zip
-RUN sudo mv chromedriver /usr/bin/chromedriver
-RUN sudo chown root:root /usr/bin/chromedriver
-RUN sudo chmod +x /usr/bin/chromedriver
 
 WORKDIR /code/
 

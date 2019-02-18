@@ -115,6 +115,9 @@ class GenericCrawler:
         # TODO: validate URL
         self._driver.get(self.start_url)
 
+    def stop(self):
+        self._driver.quit()
+
     def perform_action(self, action: CrawlerAction):
         res = action.execute(self._driver, main_handle=self._main_window_handle)
 
@@ -125,7 +128,13 @@ class GenericCrawler:
         if driver_type == 'Chrome':
             options = webdriver.ChromeOptions()
             options.set_capability('download.default_directory', download_folder)
-            driver = webdriver.Chrome(chrome_options=options)
+            # setting for running in docker
+            # TODO: remove hardcoding
+            options.add_argument('--no-sandbox')
+            options.add_argument('--window-size=1420,1080')
+            options.add_argument('--headless')
+            options.add_argument('--disable-gpu')
+            driver = webdriver.Chrome(options=options)
             driver.fullscreen_window()
         else:
             raise ValueError('{} web driver is not supported!'.format(driver_type))
