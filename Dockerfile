@@ -15,7 +15,7 @@ RUN apt-get install unzip
 RUN unzip chromedriver_linux64.zip
 RUN mv chromedriver /usr/local/bin/
 RUN chown root:root /usr/local/bin/
-RUN chmod +x /usr/local/bin/
+RUN chmod 755 /usr/local/bin/chromedriver
 
 # set display port to avoid crash
 ENV DISPLAY=:99
