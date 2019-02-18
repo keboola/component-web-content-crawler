@@ -1,5 +1,6 @@
 import abc
 import random
+import time
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -143,6 +144,6 @@ class GenericCrawler:
     def _wait_random(self, range):
         if range:
             wait_int = random.randint(range[0], range[1])
-            self._driver.implicitly_wait(wait_int)
+            time.sleep(wait_int)
         else:
             return
