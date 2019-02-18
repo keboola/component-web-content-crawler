@@ -1,0 +1,1 @@
+Application allowing to crawl website, fill login forms, click elements, download content available.
