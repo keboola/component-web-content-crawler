@@ -132,11 +132,11 @@ class GenericCrawler:
             # setting for running in docker
             # TODO: remove hardcoding
             options.add_argument('--no-sandbox')
-            options.add_argument('--window-size=1420,1080')
+            options.add_argument('--window-size=1920,1080')
             options.add_argument('--headless')
             options.add_argument('--disable-gpu')
             driver = webdriver.Chrome(options=options)
-            driver.fullscreen_window()
+            # driver.fullscreen_window()
         else:
             raise ValueError('{} web driver is not supported!'.format(driver_type))
         return driver
