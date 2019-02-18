@@ -76,8 +76,13 @@ class Component(KBCEnvHandler):
 
     def _perform_crawler_actions(self, actions):
         for a in actions:
+            # KBC bug, empty object as array
+            action_params = a.get(KEY_ACTION_PARAMETERS, {})
+            if isinstance(action_params, list) and len(action_params) == 0:
+                action_params = {}
+
             logging.info(a.get(KEY_DESCRIPTION, ''))
-            action = CrawlerActionBuilder.build(a[KEY_ACTION_NAME], **a.get(KEY_ACTION_PARAMETERS))
+            action = CrawlerActionBuilder.build(a[KEY_ACTION_NAME], **action_params)
             self.web_crawler.perform_action(action)
 
     def _fill_in_user_parameters(self, crawler_steps, user_param):
