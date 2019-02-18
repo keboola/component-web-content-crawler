@@ -14,6 +14,8 @@ RUN wget https://chromedriver.storage.googleapis.com/73.0.3683.20/chromedriver_l
 RUN apt-get install unzip
 RUN unzip chromedriver_linux64.zip
 RUN mv chromedriver /usr/local/bin/
+RUN chown root:root /usr/local/bin/
+RUN chmod +x /usr/local/bin/
 
 # set display port to avoid crash
 ENV DISPLAY=:99
