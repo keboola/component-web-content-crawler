@@ -17,6 +17,8 @@ KEY_RANDOM_WAIT = 'random_wait_range'
 KEY_USER_PARS = 'user_parameters'
 KEY_DRIVER_OPTIONS = 'driver_options'
 KEY_START_URL = 'start_url'
+KEY_STORE_COOKIES = 'store_cookies'
+KEY_DOCKER_MODE = 'docker_mode'
 
 KEY_STEPS = 'steps'
 KEY_DESCRIPTION = 'description'
@@ -54,7 +56,8 @@ class Component(KBCEnvHandler):
         random_wait = self.cfg_params.get(KEY_RANDOM_WAIT, None)
         options = self.cfg_params.get(KEY_DRIVER_OPTIONS)
         self.web_crawler = GenericCrawler(self.cfg_params[KEY_START_URL], self.tables_out_path,
-                                          random_wait_range=random_wait, options=options)
+                                          random_wait_range=random_wait, options=options,
+                                          docker_mode=self.cfg_params.get(KEY_DOCKER_MODE, True))
 
     def run(self, debug=False):
         """
@@ -66,10 +69,21 @@ class Component(KBCEnvHandler):
 
         logging.info("Entering first step url %s", self.web_crawler.start_url)
         self.web_crawler.start()
+        # set cookies, needs to be done after the domain load
+        if self.cfg_params.get(KEY_STORE_COOKIES):
+            logging.info('Loading cookies from last run.')
+            last_state = self.get_state_file()
+            self.web_crawler.load_cookies(last_state.get('cookies'))
 
         for st in crawler_steps:
             logging.info(st.get(KEY_DESCRIPTION, ''))
             self._perform_crawler_actions(st.get(KEY_ACTIONS))
+
+        if self.cfg_params.get(KEY_STORE_COOKIES):
+            logging.info('Storing cookies for next run.')
+            cookies = self.web_crawler.get_cookies()
+            state = {'cookies': cookies}
+            self.write_state_file(state)
 
         self.web_crawler.stop()
         logging.info("Extraction finished")

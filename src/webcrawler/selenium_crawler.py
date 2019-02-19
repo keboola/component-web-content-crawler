@@ -1,5 +1,6 @@
 import abc
 import logging
+import os
 import random
 import time
 
@@ -17,12 +18,36 @@ class CrawlerAction:
     # element actions
 
 
-class ClickElement(CrawlerAction):
-    def __init__(self, xpath: str):
+class ClickElementToDownload(CrawlerAction):
+    def __init__(self, xpath: str, delay=30, timeout=60, result_file_name=None):
         self.xpath = xpath
+        self.delay = delay
+        self.timeout = timeout
+        self.result_file_name = result_file_name
 
     def execute(self, driver: webdriver, **extra_args):
+        download_folder = extra_args.pop('download_folder')
+        exisitng_files = [f for f in os.listdir(download_folder) if os.path.isfile(os.path.join(download_folder, f))]
         driver.find_element_by_xpath(self.xpath).click()
+        time.sleep(self.delay)
+        self._wait_until_new_file(exisitng_files, self.timeout, download_folder)
+
+    def _wait_until_new_file(self, original_files, timeout, download_folder):
+        # wait until new file is present
+        new_files = None
+        start_time = time.time()
+        is_timedout = False
+        while not new_files and not is_timedout:
+            existng_files = [f for f in os.listdir(download_folder)
+                             if os.path.isfile(os.path.join(download_folder, f))]
+            new_files = [f for f in existng_files if f not in original_files]
+            elapsed_time = time.time() - start_time
+            if elapsed_time > timeout:
+                is_timedout = True
+
+        if is_timedout:
+            raise TimeoutError('File download timed out! Try to raise the timeout interval.')
+        return new_files
 
 
 class GenericElementAction(CrawlerAction):
@@ -50,9 +75,17 @@ class WaitForElement(CrawlerAction):
 
 
 class PrintHtmlPage(CrawlerAction):
+    def __init__(self, log_level=None):
+        """
+
+        :type log_level: int
+        """
+        self.log_level = log_level
+
     def execute(self, driver: webdriver, **extra_args):
         html = driver.page_source
-        logging.info(html)
+        if self.log_level:
+            logging.log(self.log_level, html)
 
 
 # System actions
@@ -108,13 +141,14 @@ class CrawlerActionBuilder:
 
 class GenericCrawler:
 
-    def __init__(self, start_url, download_folder, random_wait_range=None, proxy=None, driver_type='Chrome',
+    def __init__(self, start_url, download_folder, docker_mode=True, random_wait_range=None, proxy=None,
+                 driver_type='Chrome',
                  options=None):
         self.start_url = start_url
         self.random_wait_range = random_wait_range
         self.download_folder = download_folder
 
-        self._driver = self._get_driver(driver_type, download_folder, options)
+        self._driver = self._get_driver(driver_type, download_folder, options, docker_mode)
         self._main_window_handle = None
         while not self._main_window_handle:
             self._main_window_handle = self._driver.current_window_handle
@@ -123,25 +157,36 @@ class GenericCrawler:
         # TODO: validate URL
         self._driver.get(self.start_url)
 
+    def get_cookies(self):
+        return self._driver.get_cookies()
+
+    def load_cookies(self, cookies):
+        if not cookies:
+            return
+        for cookie in cookies:
+            self._driver.add_cookie(cookie)
+
     def stop(self):
         self._driver.quit()
 
     def perform_action(self, action: CrawlerAction):
-        res = action.execute(self._driver, main_handle=self._main_window_handle)
+        res = action.execute(self._driver, download_folder=self.download_folder, main_handle=self._main_window_handle)
 
         self._wait_random(self.random_wait_range)
         return res
 
-    def _get_driver(self, driver_type, download_folder, options):
+    def _get_driver(self, driver_type, download_folder, options, docker_mode):
         if driver_type == 'Chrome':
             options = webdriver.ChromeOptions()
-            options.set_capability('download.default_directory', download_folder)
+            prefs = {'download.default_directory': download_folder}
+            options.add_experimental_option('prefs', prefs)
             # setting for running in docker
             # TODO: remove hardcoding
             options.add_argument('--no-sandbox')
             options.add_argument("--window-size=1420x1080")
-            options.add_argument('--headless')
-            options.add_argument('--disable-gpu')
+            if docker_mode:
+                options.add_argument('--headless')
+                options.add_argument('--disable-gpu')
             driver = webdriver.Chrome(options=options)
             driver.maximize_window()
         else:
