@@ -171,7 +171,7 @@ class GenericCrawler:
                  driver_type='Chrome',
                  options=None):
         if docker_mode:
-            self._display = Display(visible=0, size=(1024, 768))
+            self._display = Display(visible=0, size=(1420, 1080))
             self._display.start()
         self.start_url = start_url
         self.random_wait_range = random_wait_range
@@ -219,6 +219,7 @@ class GenericCrawler:
             options.add_argument("--window-size=1420x1080")
 
             driver = webdriver.Chrome(options=options)
+            driver.set_window_size(1420, 1080)
             # self.enable_download_in_headless_chrome()
         else:
             raise ValueError('{} web driver is not supported!'.format(driver_type))
