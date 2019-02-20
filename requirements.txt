@@ -1,5 +1,5 @@
-https://bitbucket.org/kds_consulting_team/keboola-python-util-lib/get/0.1.7.zip#egg=kbc
 https://github.com/keboola/python-docker-application/zipball/2.1.1#egg=keboola-2.1.1
+https://bitbucket.org/kds_consulting_team/keboola-python-util-lib/get/0.2.0.zip#egg=kbc
 mock
 freezegun
 requests

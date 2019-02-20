@@ -17,15 +17,24 @@ RUN mv chromedriver /usr/local/bin/
 RUN chown root:root /usr/local/bin/
 RUN chmod 755 /usr/local/bin/chromedriver
 
+RUN apt-get install -y xvfb
 # set display port to avoid crash
 ENV DISPLAY=:99
 
-RUN pip install flake8
+RUN pip3 install pyvirtualdisplay
+
+# COPY to code
+COPY . /code/
+
+# set display port to avoid crash
+ENV DISPLAY=:99
+
+RUN pip3 install flake8
 # process dependency links to install kds-team.keboola-util library
-RUN pip install --process-dependency-links -r /code/requirements.txt
+RUN pip3 install -r /code/requirements.txt
 
 
 WORKDIR /code/
 
 
-CMD ["python", "-u", "/code/src/component.py"]
+CMD ["python3", "-u", "/code/src/component.py"]

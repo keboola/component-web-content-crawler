@@ -97,6 +97,7 @@ class Component(KBCEnvHandler):
 
             logging.info(a.get(KEY_DESCRIPTION, ''))
             action = CrawlerActionBuilder.build(a[KEY_ACTION_NAME], **action_params)
+
             self.web_crawler.perform_action(action)
 
     def _fill_in_user_parameters(self, crawler_steps, user_param):

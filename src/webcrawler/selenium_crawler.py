@@ -4,6 +4,7 @@ import os
 import random
 import time
 
+from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
@@ -48,6 +49,31 @@ class ClickElementToDownload(CrawlerAction):
         if is_timedout:
             raise TimeoutError('File download timed out! Try to raise the timeout interval.')
         return new_files
+
+
+class GenericShadowDomElementAction(CrawlerAction):
+    CSS_SHADOW_HOST = '#shadow-root'
+
+    def __init__(self, method_name, xpath: str, shadow_parent_element, **kwargs):
+        self.xpath = xpath
+        self.method_name = method_name
+        self.method_args = kwargs
+        self.shadow_parent_element = shadow_parent_element
+
+    def execute(self, driver: webdriver, **extra_args):
+        positional_args = self.method_args.pop('positional_arguments', [])
+        element = self.find_shadow_dom_element(self.xpath, driver, self.shadow_parent_element)
+        method = getattr(element, self.method_name)
+        return method(*positional_args, **self.method_args)
+
+    def find_shadow_dom_element(self, xpath, driver, root_element_tag):
+        shadow_root = self.get_ext_shadow_root(driver, driver.find_element_by_tag_name(root_element_tag))
+        element = shadow_root.find_element_by_xpath(xpath)
+        return element
+
+    def get_ext_shadow_root(self, driver, element):
+        shadow_root = driver.execute_script('return arguments[0].shadowRoot', element)
+        return shadow_root
 
 
 class GenericElementAction(CrawlerAction):
@@ -144,9 +170,13 @@ class GenericCrawler:
     def __init__(self, start_url, download_folder, docker_mode=True, random_wait_range=None, proxy=None,
                  driver_type='Chrome',
                  options=None):
+        if docker_mode:
+            self._display = Display(visible=0, size=(1024, 768))
+            self._display.start()
         self.start_url = start_url
         self.random_wait_range = random_wait_range
         self.download_folder = download_folder
+        self._docker_mode = docker_mode
 
         self._driver = self._get_driver(driver_type, download_folder, options, docker_mode)
         self._main_window_handle = None
@@ -168,6 +198,8 @@ class GenericCrawler:
 
     def stop(self):
         self._driver.quit()
+        if self._docker_mode:
+            self._display.stop()
 
     def perform_action(self, action: CrawlerAction):
         res = action.execute(self._driver, download_folder=self.download_folder, main_handle=self._main_window_handle)
@@ -178,17 +210,16 @@ class GenericCrawler:
     def _get_driver(self, driver_type, download_folder, options, docker_mode):
         if driver_type == 'Chrome':
             options = webdriver.ChromeOptions()
-            prefs = {'download.default_directory': download_folder}
+            prefs = {'download.default_directory': download_folder,
+                     "download.prompt_for_download": False}
             options.add_experimental_option('prefs', prefs)
             # setting for running in docker
             # TODO: remove hardcoding
             options.add_argument('--no-sandbox')
             options.add_argument("--window-size=1420x1080")
-            if docker_mode:
-                options.add_argument('--headless')
-                options.add_argument('--disable-gpu')
+
             driver = webdriver.Chrome(options=options)
-            driver.maximize_window()
+            # self.enable_download_in_headless_chrome()
         else:
             raise ValueError('{} web driver is not supported!'.format(driver_type))
         return driver
