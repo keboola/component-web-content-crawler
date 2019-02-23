@@ -6,12 +6,16 @@ import time
 
 from pyvirtualdisplay import Display
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 
 
 class CrawlerAction:
+    KEY_ACTION_PARAMETERS = 'action_parameters'
+    KEY_ACTION_NAME = 'action_name'
+
     @abc.abstractmethod
     def execute(self, driver: webdriver, **extra_args):
         pass
@@ -100,6 +104,15 @@ class WaitForElement(CrawlerAction):
         return el
 
 
+class BreakBlockExecution(CrawlerAction):
+    """
+    Returns self to notify executor that it should break the current branch and switch to another.
+    """
+
+    def execute(self, driver: webdriver, **extra_args):
+        return self
+
+
 class PrintHtmlPage(CrawlerAction):
     def __init__(self, log_level=None):
         """
@@ -112,6 +125,49 @@ class PrintHtmlPage(CrawlerAction):
         html = driver.page_source
         if self.log_level:
             logging.log(self.log_level, html)
+
+
+class ConditionalAction(CrawlerAction):
+    def __init__(self, test_action, result_action=None, fail_action=None):
+        """
+
+
+        :param test_action: Testing action, if the action passes the result_action will be executed.
+        :type test_action: CrawlerAction
+        :param result_action: The action executed if the entry action passes
+        :type result_action: CrawlerAction
+        :param fail_action: The action executed if the entry action fails.
+        If not specified, excution continues on failure.
+        :type result_action: CrawlerAction
+        """
+        self.test_action = test_action
+        self.result_action = result_action
+        self.fail_action = fail_action
+
+    def execute(self, driver: webdriver, **extra_args):
+        logging.info('Executing test action %s', type(self.test_action).__name__)
+        try:
+            self.test_action.execute(driver, **extra_args)
+        except WebDriverException as e:
+            logging.debug('The testing action %s with params [%s]  failed with error: %s',
+                          type(self.test_action).__name__,
+                          self.test_action.__dict__, str(e))
+
+            logging.info('The testing action %s failed with error: %s',
+                         type(self.test_action).__name__, str(e))
+            if self.fail_action:
+                logging.info('Executing action (%s) defined on failure.', type(self.fail_action).__name__)
+                return self.fail_action.execute(driver, **extra_args)
+            else:
+                logging.info('Continue execution..')
+                return
+
+        # test passed
+        if self.result_action:
+            logging.info('Test action passed, executing result_action %s', type(self.result_action).__name__)
+            return self.result_action.execute(driver, **extra_args)
+        else:
+            logging.info('No result action specified, continuing..')
 
 
 # System actions
@@ -146,6 +202,7 @@ class SwitchToMainWindow(CrawlerAction):
 
 
 class CrawlerActionBuilder:
+
     @staticmethod
     def build(action_name, **parameters):
         # TODO: validate parameters based on type
@@ -155,7 +212,12 @@ class CrawlerActionBuilder:
                              'suported values are: [{}]'.format(action_name,
                                                                 CrawlerAction.__subclasses__()))
 
-        return supported_actions[action_name](**parameters)
+        # special case of conditional action
+        if action_name == 'ConditionalAction':
+            cond_action = supported_actions[action_name](**parameters)
+            return CrawlerActionBuilder._build_conditional_action(cond_action)
+        else:
+            return supported_actions[action_name](**parameters)
 
     @staticmethod
     def get_supported_actions():
@@ -163,6 +225,26 @@ class CrawlerActionBuilder:
         for c in CrawlerAction.__subclasses__():
             supported_actions[c.__name__] = c
         return supported_actions
+
+    @staticmethod
+    def _build_conditional_action(cond_action: ConditionalAction):
+        test_action_def = cond_action.test_action
+        action_pars = test_action_def.get(CrawlerAction.KEY_ACTION_PARAMETERS, {})
+        cond_action.test_action = CrawlerActionBuilder.build(test_action_def[CrawlerAction.KEY_ACTION_NAME],
+                                                             **action_pars)
+
+        if cond_action.result_action:
+            action_def = cond_action.result_action
+            action_pars = action_def.get(CrawlerAction.KEY_ACTION_PARAMETERS, {})
+            cond_action.result_action = CrawlerActionBuilder.build(action_def[CrawlerAction.KEY_ACTION_NAME],
+                                                                   **action_pars)
+
+        if cond_action.fail_action:
+            action_def = cond_action.fail_action
+            action_pars = action_def.get(CrawlerAction.KEY_ACTION_PARAMETERS, {})
+            cond_action.fail_action = CrawlerActionBuilder.build(action_def[CrawlerAction.KEY_ACTION_NAME],
+                                                                 **action_pars)
+        return cond_action
 
 
 class GenericCrawler:

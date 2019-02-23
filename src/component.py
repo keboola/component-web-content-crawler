@@ -9,6 +9,7 @@ import logging
 from kbc.env_handler import KBCEnvHandler
 from nested_lookup import nested_lookup
 
+from webcrawler.selenium_crawler import BreakBlockExecution
 from webcrawler.selenium_crawler import CrawlerActionBuilder
 from webcrawler.selenium_crawler import GenericCrawler
 
@@ -67,7 +68,7 @@ class Component(KBCEnvHandler):
 
         crawler_steps = self._fill_in_user_parameters(crawler_steps, self.cfg_params.get(KEY_USER_PARS))
 
-        logging.info("Entering first step url %s", self.web_crawler.start_url)
+        logging.info("Entering first step URL %s", self.web_crawler.start_url)
         self.web_crawler.start()
         # set cookies, needs to be done after the domain load
         if self.cfg_params.get(KEY_STORE_COOKIES):
@@ -98,7 +99,10 @@ class Component(KBCEnvHandler):
             logging.info(a.get(KEY_DESCRIPTION, ''))
             action = CrawlerActionBuilder.build(a[KEY_ACTION_NAME], **action_params)
 
-            self.web_crawler.perform_action(action)
+            res = self.web_crawler.perform_action(action)
+            # check if is break action
+            if isinstance(res, BreakBlockExecution):
+                break
 
     def _fill_in_user_parameters(self, crawler_steps, user_param):
         # convert to string minified
