@@ -172,7 +172,7 @@ class ConditionalAction(CrawlerAction):
 
 # System actions
 
-class GenericBrowserAction(CrawlerAction):
+class GenericDriverAction(CrawlerAction):
     def __init__(self, method_name, **kwargs):
         self.method_name = method_name
         self.method_args = kwargs
