@@ -422,6 +422,11 @@ from the root folder.
 Please note that you should set up the `KBC_DATADIR` environment variable pointing to your configuration folder 
 in case you do not have the `data` folder present in the root.
 
+For the local development it is also necessary to have Chrome browser installed and set the `dokcer_mode` configuration 
+parameter to `false`. This way it is possible to see the actual effects of each steps defined directly in the browser 
+and develop the configuration step-by-step. For inspecting the DOM structure it is recommended to use the 
+[Chrome Dev Console](https://developers.google.com/web/tools/chrome-devtools/console/) available by pressing `F12` or right click -> explore element.
+
 
 ## Development
  

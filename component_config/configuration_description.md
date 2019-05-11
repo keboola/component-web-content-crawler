@@ -1,0 +1,1 @@
+Full documentation is available [here](https://bitbucket.org/kds_consulting_team/kds-team.ex-web-content-crawler/src/master/README.md)
