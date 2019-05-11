@@ -5,3 +5,4 @@ freezegun
 requests
 selenium
 nested-lookup
+pyvirtualdisplay

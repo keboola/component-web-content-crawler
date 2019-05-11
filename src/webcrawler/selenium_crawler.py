@@ -2,8 +2,8 @@ import abc
 import logging
 import os
 import random
-import time
 
+import time
 from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -25,6 +25,13 @@ class CrawlerAction:
 
 class ClickElementToDownload(CrawlerAction):
     def __init__(self, xpath: str, delay=30, timeout=60, result_file_name=None):
+        """
+
+        :param xpath: XPATH defining the target element
+        :param delay: Wait time in seconds before the action is executed.
+        :param timeout: Time in seconds that define the maximum time the action waits for the download.
+        :param result_file_name:
+        """
         self.xpath = xpath
         self.delay = delay
         self.timeout = timeout
@@ -95,6 +102,11 @@ class GenericElementAction(CrawlerAction):
 
 class WaitForElement(CrawlerAction):
     def __init__(self, xpath: str, delay=10):
+        """
+
+        :param xpath:
+        :param delay: Timeout of the action in case the element is never available
+        """
         self.xpath = xpath
         self.delay = delay
 
@@ -293,7 +305,9 @@ class GenericCrawler:
         if driver_type == 'Chrome':
             options = webdriver.ChromeOptions()
             prefs = {'download.default_directory': download_folder,
-                     "download.prompt_for_download": False}
+                     "download.prompt_for_download": False,
+                     "safebrowsing.enabled": False
+                     }
             options.add_experimental_option('prefs', prefs)
             # setting for running in docker
             # TODO: remove hardcoding

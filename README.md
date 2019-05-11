@@ -1,10 +1,346 @@
-# KBC Component 
+# KBC Selenium web crawler
+
+A Keboola Connection component allowing to perform variety of web browser operations on any web-site 
+and download web content into the Storage. It is useful for instance for navigating through a legacy system web interface 
+and downloading a generated report that would be impossible to export in an automated manner otherwise.
+
+The crawler emulates `Chrome` browser version `73.0.3683.20` operating with window resolution of `1420x1080`. 
+The browser is run with configuration parameter `--no-sandbox` and driver option `"safebrowsing.enabled": False`.
+
+## Configuration
+
+The crawler is configurable via JSON, where you define each `Action` as an object. These `Action` objects define 
+a real web browser action a user would make, e.g. click an object, fill in a form, etc.
+
+### Configuration Structure
+
+```json
+{
+   "start_url":"https://www.example.com/",
+   "random_wait_range":[
+      1,
+      5
+   ],
+   "user_parameters":{
+      "username":"user@gmail.com",
+      "#password":"XXX"
+   },
+   "store_cookies":true,
+   "docker_mode":false,
+   "Steps":[
+      {
+         "description":"Step description, useful for debugging.",
+         "Actions":[
+            {
+               "description":"Action description, useful for debugging",
+               "action_name":"ACTION_NAME",
+               "action_parameters":{
+
+               }
+            }
+         ]
+      }
+   ]
+}
+```
+
+**Parameters**
+
+- **start_url** – An URL of the page where the crawler starts off.
+- **random_wait_range** - A time range in seconds defining how long should the crawler wait between each action. 
+The interval is defined by boundaries in seconds, e.g. [1, 5] means that the crawler will wait between each action anywhere 
+between 1s and 5s, the actual wait time is chosen randomly within these boundaries.
+- **user_parameters** – A list of user parameters that is are accessible from within actions. This is useful for storing 
+for example user credentials that are to be filled in a login form. Appending `#` sign before the attribute name will hash the value and store it securely 
+within the configuration (recommended for passwords).
+- **store_cookies** – If set to true the crawler will store cookies from the last time and use it every consecutive run. 
+This is useful for storing credentials and also making the browser legit for the target system, e.g. logging in with Google.
+- **docker_mode** - Set to `true` for run in KBC. This option enables display emulation so it can be run in Docker container without a `headless` mode. 
+Set to `false` for local development, so you can see the actual browser on your local machine.
+- **Steps** – An array of `Step` objects that are grouping a set of `Actions`. More information in sections below.
+
+### `Step` object
+
+Steps are groups of actions. It is used to logically structure steps taken on the web site and also to 
+divide different branches of execution. For instance: Logging, Navigating, Download file.
+
+Future version will support iterations on a particular step.
+
+```json
+{
+   "description":"Step description, useful for debugging.",
+   "Actions":[
+      {
+         "description":"Action description, useful for debugging",
+         "action_name":"ACTION_NAME",
+         "action_parameters":{
+
+         }
+      }
+   ]
+}
+```
+
+### Actions
+
+Action define a user action in the browser, e.g. click, fill in a form, wait, navigate to pop-up window, etc.
+
+**Action object structure**
+
+```json
+{
+   "description":"Action description, useful for debugging",
+   "action_name":"ACTION_NAME",
+   "action_parameters":{
+
+   }
+}
+```
+
+**Parameters**
+
+- **description** - An Action description, useful for debugging. This description is also populated in the Job log during execution.
+- **action_name** - Name of the particular supported action
+- **action_parameters** - List of action parameters that are applicable for that particular action.
+
+#### Supported Actions
+
+#### **Actions on element**
+
+- The element is defined by an [XPATH](https://www.w3schools.com/xml/xpath_intro.asp) expression.
+- Either special actions or generic (any [action on WebElement](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webelement.html) supported by Selenium library)
+
+##### **ClickElementToDownload**
+
+This action clicks an element that leads to a file that should be stored in the Storage. It performs the click and waits until the 
+file is downloaded.
+
+###### Parameters
+- **xpath** - [REQ] XPATH defining the target element
+- **delay** - [OPT] Wait time in seconds before the action is executed. Default value is `30`s.
+- **timeout** - [OPT] Time in seconds that define the maximum time the action waits for the download. Default value is `60`s
+
+```json
+{
+   "description":"Click Download",
+   "action_name":"ClickElementToDownload",
+   "action_parameters":{
+      "xpath":"//a//span[contains(text(),'Download')]",
+      "delay":10,
+      "timeout":120
+   }
+}
+```
+
+##### **WaitForElement**
+
+This action waits for an element before it becomes available in the DOM. Useful to make sure the page is fully loaded - e.g. all JS code is executed.
+
+###### Parameters
+- **xpath** - [REQ] XPATH defining the target element
+- **delay** - [OPT] Timeout of the action in case the element is never available. Default value is `10`s.
+
+```json
+{
+   "description":"Waiting until doc is loaded.",
+   "action_name":"WaitForElement",
+   "action_parameters":{
+      "xpath":"//a[@href='/login']",
+      "delay":10
+   }
+}
+```
+
+##### **ClickElementToDownload**
+
+This action clicks an element that leads to a file that should be stored in the Storage. It performs the click and waits until the 
+file is downloaded.
+
+###### Parameters
+- **xpath** - [REQ] XPATH defining the target element
+- **delay** - [OPT] Wait time in seconds before the action is executed. Default value is `30`s.
+- **timeout** - [OPT] Time in seconds that define the maximum time the action waits for the download. Default value is `60`s
+
+```json
+{
+   "description":"Click Download",
+   "action_name":"ClickElementToDownload",
+   "action_parameters":{
+      "xpath":"//a//span[contains(text(),'Download')]",
+      "delay":10,
+      "timeout":120
+   }
+}
+```
+
+##### **GenericElementAction**
+
+A generic action performed on the specified element. This action is a wrapper allowing execution of any 
+method defined for [`selenium.webdriver.remote.webelement`](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webelement.html). 
+To see the list of all supported actions and its parameters see the [selenium documentation](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webelement.html)
+
+
+###### Parameters
+- **xpath** - [REQ] XPATH defining the target element.
+- **action_name** - [REQ] Any method name available in the `selenium.webdriver.remote.webelement` interface. e.g. `click`.
+- **positional_arguments** - List of values as defined by the `webelement` method. e.g. ['My text'] for `send_keys(value)` method
+- **[other_parameters]** - any other parameters supported by the `selenium.webdriver.remote.webelement` interface. 
+Note that the parameters must be specified exactly as they are defined on the method and all required parameters are needed.
+- **description** - description of the action. Useful for debugging, the message is included in the job log on execution.
+Example below triggers the [send_keys](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webelement.html#selenium.webdriver.remote.webelement.WebElement.send_keys) method.
+
+```json
+{
+   "description":"Fill in username",
+   "action_name":"GenericElementAction",
+   "action_parameters":{
+      "xpath":"//input[@type='email']",
+      "positional_arguments":{
+         "attr":"username"
+      },
+      "method_name":"send_keys"
+   }
+}
+```
+
+#### **System actions**
+
+These actions are not related to web elements. They usually define actions on the Selenium driver itself. 
+These include for instance navigation between pop-up windows, explicit waiting, etc.
+
+##### **GenericDriverAction**
+
+This action is a wrapper allowing execution of any 
+method defined for [`selenium.webdriver.remote.webdriver`](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver). 
+To see the list of all supported actions and its parameters see the [selenium documentation](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver)
+
+
+###### Parameters
+- **xpath** - [REQ] XPATH defining the target element
+- **[other_parameters]** - any other parameters supported by the [webdriver](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver) interface. 
+Note that the parameters must be specified exactly as they are defined on the method and all required parameters are needed.
+- **action_name** - [REQ] Any method name available in the `selenium.webdriver` interface. e.g. `implicitly_wait`.
+- **positional_arguments** - List of values as defined by the `webdriver` method.
+- **description** - description of the action. Useful for debugging, the message is included in the job log on execution.
+
+Example below triggers the [implicitly_wait](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#selenium.webdriver.remote.webdriver.WebDriver.implicitly_wait) method.
+
+```json
+{
+   "description":"Wait",
+   "action_name":"GenericDriverAction",
+   "action_parameters":{
+      "positional_arguments":[
+         60
+      ],
+      "method_name":"implicitly_wait"
+   }
+}
+```
+
+
+##### **PrintHtmlPage**
+
+This action is useful for debugging purposes, it allows to print out the full HTML code of a current page into the out stream on a defined level.
+
+Supported levels are:
+CRITICAL = 50
+ERROR = 40
+WARNING = 30
+INFO = 20
+DEBUG = 10
+NOTSET = 0
+
+###### Parameters
+- **log_level** - [OPT] Int number specifying the output log level.
+
+```json
+{
+   "description":"Print whole page",
+   "action_name":"PrintHtmlPage",
+   "action_parameters":{
+      "log_level":10
+   }
+}
+```
+
+##### **SwitchToPopup**
+
+This action navigates to a newly opened pop-up window. This is useful for instance for navigating into 
+a new window populated on login button. After the work is done action `SwitchToMainWindow` should be used to navigate back to the main window.
+
+```json
+{
+   "description":"Navigating to login popup window",
+   "action_name":"SwitchToPopup",
+   "action_parameters":{}
+}
+```
+
+##### **SwitchToMainWindow**
+
+This action navigates back to the main window. After the work is done action `SwitchToMainWindow` should be used to navigate back to the main window.
+
+```json
+{
+   "description":"Switch focus back to main window",
+   "action_name":"SwitchToMainWindow",
+   "action_parameters":{}
+}
+```
+
+##### **ConditionalAction**
+
+Allows to define an action that is executed based on result of some other action. This is useful for navigation between 
+different execution branches, for instance when using the stored cookies first run might require login credentials and the 
+other may not because the token is already saved in the cookie file. This action allows skipping the whole `login` execution step,
+when some defined condition fails.
+
+** Parameters** 
+- **test_action** - Testing action object, if the action passes the result_action will be executed.
+- **result_action** - The action executed if the entry action passes.
+- **fail_action** - [OPT] The action executed if the entry action fails. If not specified, excution continues on failure.
+
+```json
+{
+   "description":"Look for modal form in case of second login and try to close it and refresh.",
+   "action_name":"ConditionalAction",
+   "action_parameters":{
+      "test_action":{
+         "action_name":"GenericElementAction",
+         "action_parameters":{
+            "xpath":"//div[@role='dialog' and @aria-labelledby='dls-modal__Login']//button[@type='button']",
+            "method_name":"click"
+         }
+      },
+      "result_action":{
+         "action_name":"GenericDriverAction",
+         "action_parameters":{
+            "method_name":"refresh"
+         }
+      }
+   }
+}
+```
+
+##### **BreakBlockExecution**
+
+This action allows breaking the current `Step` execution and skipping to the next step.
+
+```json
+{
+   "description":"Already logged in, skipping the login branch.",
+   "action_name":"BreakBlockExecution"
+}
+```
+
+
 ## Development
  
-This example contains runnable container with simple unittest. For local testing it is useful to include `data` folder in the root
+For local testing it is useful to include `data` folder in the root
 and use docker-compose commands to run the container or execute tests. 
 
-If required, change local data folder path to your custom:
+If required, change the local data folder path in the `docker-composer` file to your custom one:
 ```yaml
     volumes:
       - ./:/code
