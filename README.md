@@ -334,6 +334,93 @@ This action allows breaking the current `Step` execution and skipping to the nex
 }
 ```
 
+### Sample configuration
+```json
+{
+   "user_parameters":{},
+   "driver":"Chrome",
+   "start_url":"https://support.spatialkey.com/spatialkey-sample-csv-data",
+   "random_wait_range":[
+      1,
+      10
+   ],
+   "store_cookies":false,
+   "docker_mode":true,
+   "steps":[
+      {
+         "description":"Test if should continue",
+         "actions":[
+            {
+               "description":"Continue if search field exists.",
+               "action_name":"ConditionalAction",
+               "action_parameters":{
+                  "test_action":{
+                     "action_name":"GenericElementAction",
+                     "action_parameters":{
+                        "xpath":"//div[@id='livesearch']",
+                        "method_name":"click"
+                     }
+                  },
+                  "fail_action":{
+                     "action_name":"BreakBlockExecution"
+                  }
+               }
+            },
+            {
+               "description":"live-search found, continue in block",
+               "action_name":"GenericBrowserAction",
+               "action_parameters":{
+                  "positional_arguments":[
+                     2
+                  ],
+                  "method_name":"implicitly_wait"
+               }
+            }
+         ]
+      },
+      {
+         "description":"Choose and download report.",
+         "actions":[
+            {
+               "description":"Click Download",
+               "action_name":"GenericElementAction",
+               "action_parameters":{
+                  "xpath":"//a[@href='http://spatialkeydocs.s3.amazonaws.com/FL_insurance_sample.csv.zip']",
+                  "method_name":"click"
+               }
+            },
+            {
+               "description":"Wait",
+               "action_name":"GenericBrowserAction",
+               "action_parameters":{
+                  "positional_arguments":[
+                     30
+                  ],
+                  "method_name":"implicitly_wait"
+               }
+            }
+         ]
+      }
+   ],
+   "debug":false
+}
+```
+
+## Configuration creation
+
+To configure the web crawler it is needed to know the expected DOM structure of the website crawled. 
+For that it is recommended to run the component locally, executing the `component.py` `run` method. This can be done 
+either using your favourite IDE such as PyCharm or manually from the command line by running:
+
+```
+python -u /code/src/component.py
+```
+
+from the root folder.
+
+Please note that you should set up the `KBC_DATADIR` environment variable pointing to your configuration folder 
+in case you do not have the `data` folder present in the root.
+
 
 ## Development
  
