@@ -296,7 +296,8 @@ different execution branches, for instance when using the stored cookies first r
 other may not because the token is already saved in the cookie file. This action allows skipping the whole `login` execution step,
 when some defined condition fails.
 
-** Parameters** 
+###### Parameters
+
 - **test_action** - Testing action object, if the action passes the result_action will be executed.
 - **result_action** - The action executed if the entry action passes.
 - **fail_action** - [OPT] The action executed if the entry action fails. If not specified, excution continues on failure.
