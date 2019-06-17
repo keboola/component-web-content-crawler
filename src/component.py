@@ -3,6 +3,7 @@ Template Component main class.
 
 '''
 
+import argparse
 import json
 import logging
 
@@ -35,8 +36,8 @@ APP_VERSION = '0.0.1'
 
 class Component(KBCEnvHandler):
 
-    def __init__(self, debug=False):
-        KBCEnvHandler.__init__(self, MANDATORY_PARS)
+    def __init__(self, debug=False, data_path=None):
+        KBCEnvHandler.__init__(self, MANDATORY_PARS, data_path=data_path)
         # override debug from config
         if self.cfg_params.get('debug'):
             debug = True
@@ -126,5 +127,16 @@ class Component(KBCEnvHandler):
 """
 
 if __name__ == "__main__":
-    comp = Component()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--data', help='Data folder path')
+    parser.add_argument('--debug', help='Debug mode')
+
+    args = parser.parse_args()
+    if args.debug:
+        debug = True
+    else:
+        debug = False
+
+    comp = Component(debug=debug, data_path=args.data)
     comp.run()
