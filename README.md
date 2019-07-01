@@ -289,6 +289,21 @@ This action navigates back to the main window. After the work is done action `Sw
 }
 ```
 
+##### **Wait**
+
+This action pauses execution for specified amount of time (in seconds). 
+
+
+```json
+{
+   "description":"Pause execution for 10s",
+   "action_name":"Wait",
+   "action_parameters":{
+      "seconds":10
+   }
+}
+```
+
 ##### **ConditionalAction**
 
 Allows to define an action that is executed based on result of some other action. This is useful for navigation between 

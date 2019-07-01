@@ -213,6 +213,22 @@ class SwitchToMainWindow(CrawlerAction):
         driver.switch_to.window(main_handle)
 
 
+class Wait(CrawlerAction):
+    """
+    Pauses execution for specified amount of time (s).
+    """
+
+    def __init__(self, seconds):
+        """
+
+        :param seconds: Seconds to wait
+        """
+        self.seconds = seconds
+
+    def execute(self, driver: webdriver, **extra_args):
+        time.sleep(self.seconds)
+
+
 class CrawlerActionBuilder:
 
     @staticmethod
