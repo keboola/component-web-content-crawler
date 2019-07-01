@@ -10,7 +10,7 @@ RUN apt-get -y update
 RUN apt-get install -y google-chrome-stable
 
 ## install chrome webdriver
-RUN wget https://chromedriver.storage.googleapis.com/73.0.3683.20/chromedriver_linux64.zip
+RUN wget https://chromedriver.storage.googleapis.com/75.0.3770.90/chromedriver_linux64.zip
 RUN apt-get install unzip
 RUN unzip chromedriver_linux64.zip
 RUN mv chromedriver /usr/local/bin/
