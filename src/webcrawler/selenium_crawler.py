@@ -3,6 +3,7 @@ import logging
 import os
 import random
 
+import pyscreenshot as ImageGrab
 import time
 from pyvirtualdisplay import Display
 from selenium import webdriver
@@ -229,6 +230,25 @@ class Wait(CrawlerAction):
         time.sleep(self.seconds)
 
 
+class TakeScreenshot(CrawlerAction):
+    """
+    Pauses execution for specified amount of time (s).
+    """
+
+    def __init__(self, name, **extra_args):
+        """
+
+        :param seconds: Seconds to wait
+        """
+        self.folder = extra_args.pop('download_folder')
+        self.name = name
+
+    def execute(self, driver: webdriver, **extra_args):
+        im = ImageGrab.grab()
+        # save image file
+        im.save(os.path.join(self.folder, self.name, 'png'))
+
+
 class CrawlerActionBuilder:
 
     @staticmethod
@@ -277,11 +297,19 @@ class CrawlerActionBuilder:
 
 class GenericCrawler:
 
-    def __init__(self, start_url, download_folder, docker_mode=True, random_wait_range=None, proxy=None,
+    def __init__(self, start_url, download_folder, docker_mode=True, random_wait_range=None, resolution='1920x1080',
+                 proxy=None,
                  driver_type='Chrome',
                  options=None):
+
+        if resolution is None:
+            resolution = '1920x1080'
+
+        res_sizes = resolution.split('x')
+        if len(res_sizes) != 2:
+            raise ValueError("Resolution is in invalid format, you must provide it as WIDTHxEIGHT. e.g. 1024x980")
         if docker_mode:
-            self._display = Display(visible=0, size=(1420, 1080))
+            self._display = Display(visible=0, size=(res_sizes[0], res_sizes[1]))
             self._display.start()
         self.start_url = start_url
         self.random_wait_range = random_wait_range
@@ -311,6 +339,9 @@ class GenericCrawler:
         if self._docker_mode:
             self._display.stop()
 
+    def maximize_window(self):
+        self._driver.maximize_window()
+
     def perform_action(self, action: CrawlerAction):
         res = action.execute(self._driver, download_folder=self.download_folder, main_handle=self._main_window_handle)
 
@@ -328,18 +359,17 @@ class GenericCrawler:
             # setting for running in docker
             # TODO: remove hardcoding
             options.add_argument('--no-sandbox')
-            options.add_argument("--window-size=1420x1080")
-
+            options.add_argument('--disable-features=VizDisplayCompositor')
+            # start maximized does not work when in docker mode
             driver = webdriver.Chrome(options=options)
-            driver.set_window_size(1420, 1080)
             # self.enable_download_in_headless_chrome()
         else:
             raise ValueError('{} web driver is not supported!'.format(driver_type))
         return driver
 
-    def _wait_random(self, range):
-        if range:
-            wait_int = random.randint(range[0], range[1])
+    def _wait_random(self, _range):
+        if _range:
+            wait_int = random.randint(_range[0], _range[1])
             time.sleep(wait_int)
         else:
             return
