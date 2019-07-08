@@ -50,6 +50,8 @@ a real web browser action a user would make, e.g. click an object, fill in a for
 - **random_wait_range** - A time range in seconds defining how long should the crawler wait between each action. 
 The interval is defined by boundaries in seconds, e.g. [1, 5] means that the crawler will wait between each action anywhere 
 between 1s and 5s, the actual wait time is chosen randomly within these boundaries.
+- **resolution** - (OPT) resolution of the screen as a string, e.g. `1024x980`. The default value is `1920x1080`.
+- **maximize_window** - (OPT) Boolean value flagging whether to maximize the window to match the max resolution. Default is `false`.
 - **user_parameters** – A list of user parameters that is are accessible from within actions. This is useful for storing 
 for example user credentials that are to be filled in a login form. Appending `#` sign before the attribute name will hash the value and store it securely 
 within the configuration (recommended for passwords).
