@@ -15,6 +15,8 @@ from webcrawler.selenium_crawler import CrawlerActionBuilder
 from webcrawler.selenium_crawler import GenericCrawler
 
 # configuration variables
+KEY_RESOLUTION = 'resolution'
+KEY_MAX_WINDOW = 'maximize_window'
 KEY_RANDOM_WAIT = 'random_wait_range'
 KEY_USER_PARS = 'user_parameters'
 KEY_DRIVER_OPTIONS = 'driver_options'
@@ -59,7 +61,8 @@ class Component(KBCEnvHandler):
         options = self.cfg_params.get(KEY_DRIVER_OPTIONS)
         self.web_crawler = GenericCrawler(self.cfg_params[KEY_START_URL], self.tables_out_path,
                                           random_wait_range=random_wait, options=options,
-                                          docker_mode=self.cfg_params.get(KEY_DOCKER_MODE, True))
+                                          docker_mode=self.cfg_params.get(KEY_DOCKER_MODE, True),
+                                          resolution=self.cfg_params.get(KEY_RESOLUTION))
 
     def run(self, debug=False):
         """
@@ -71,6 +74,9 @@ class Component(KBCEnvHandler):
 
         logging.info("Entering first step URL %s", self.web_crawler.start_url)
         self.web_crawler.start()
+        if self.cfg_params.get(KEY_MAX_WINDOW):
+            self.web_crawler.maximize_window()
+
         # set cookies, needs to be done after the domain load
         if self.cfg_params.get(KEY_STORE_COOKIES):
             logging.info('Loading cookies from last run.')
@@ -101,6 +107,7 @@ class Component(KBCEnvHandler):
             action = CrawlerActionBuilder.build(a[KEY_ACTION_NAME], **action_params)
 
             res = self.web_crawler.perform_action(action)
+
             # check if is break action
             if isinstance(res, BreakBlockExecution):
                 break

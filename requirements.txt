@@ -6,3 +6,5 @@ requests
 selenium
 nested-lookup
 pyvirtualdisplay
+pyscreenshot
+Pillow
