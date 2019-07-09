@@ -1,9 +1,11 @@
 import abc
+import base64
 import logging
 import os
 import random
 
 import pyscreenshot as ImageGrab
+import requests
 import time
 from pyvirtualdisplay import Display
 from selenium import webdriver
@@ -235,18 +237,44 @@ class TakeScreenshot(CrawlerAction):
     Pauses execution for specified amount of time (s).
     """
 
-    def __init__(self, name, **extra_args):
+    def __init__(self, name, folder='screens', imgbb_token=None):
         """
 
         :param seconds: Seconds to wait
         """
-        self.folder = extra_args.pop('download_folder')
+        self.folder = folder
         self.name = name
+        self.imgbb_token = imgbb_token
 
     def execute(self, driver: webdriver, **extra_args):
+        folder_path = os.path.join(extra_args.pop('data_folder'), self.folder)
+        runid_prefix = extra_args.get('runid', '')
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
         im = ImageGrab.grab()
         # save image file
-        im.save(os.path.join(self.folder, self.name, 'png'))
+        img_path = os.path.join(folder_path, self.name + '.png')
+        im.save(img_path)
+        if self.imgbb_token:
+            self._store_in_imgbb(img_path, self.imgbb_token, str(runid_prefix) + '_' + self.name)
+
+    def _store_in_imgbb(self, img_path, token, name):
+        with open(img_path, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read())
+        values = {
+            "image": encoded_string
+        }
+
+        params = {
+            'key': token,
+            "name": name
+        }
+        response = requests.post('https://api.imgbb.com/1/upload', data=values,
+                                 params=params)
+
+        if response.status_code > 299:
+            raise RuntimeError(F'Failed to store image {name} in the ImgBB repository')
 
 
 class CrawlerActionBuilder:
@@ -264,6 +292,9 @@ class CrawlerActionBuilder:
         if action_name == 'ConditionalAction':
             cond_action = supported_actions[action_name](**parameters)
             return CrawlerActionBuilder._build_conditional_action(cond_action)
+        elif action_name == 'TakeScreenshot':
+            parameters['imgbb_token'] = parameters.pop('#imgbb_token', None)
+            return supported_actions[action_name](**parameters)
         else:
             return supported_actions[action_name](**parameters)
 
@@ -297,7 +328,7 @@ class CrawlerActionBuilder:
 
 class GenericCrawler:
 
-    def __init__(self, start_url, download_folder, files_folder, docker_mode=True, random_wait_range=None,
+    def __init__(self, start_url, download_folder, data_folder, runid='', docker_mode=True, random_wait_range=None,
                  resolution='1920x1080',
                  proxy=None,
                  driver_type='Chrome',
@@ -315,7 +346,8 @@ class GenericCrawler:
         self.start_url = start_url
         self.random_wait_range = random_wait_range
         self.download_folder = download_folder
-        self.files_folder = files_folder
+        self.data_folder = data_folder
+        self.runid = runid
         self._docker_mode = docker_mode
 
         self._driver = self._get_driver(driver_type, download_folder, options, docker_mode)
@@ -345,8 +377,8 @@ class GenericCrawler:
         self._driver.maximize_window()
 
     def perform_action(self, action: CrawlerAction):
-        res = action.execute(self._driver, download_folder=self.download_folder, files_folder=self.files_folder,
-                             main_handle=self._main_window_handle)
+        res = action.execute(self._driver, download_folder=self.download_folder, data_folder=self.data_folder,
+                             runid=self.runid, main_handle=self._main_window_handle)
 
         self._wait_random(self.random_wait_range)
         return res

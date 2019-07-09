@@ -60,8 +60,9 @@ class Component(KBCEnvHandler):
         # intialize instance parameters
         random_wait = self.cfg_params.get(KEY_RANDOM_WAIT, None)
         options = self.cfg_params.get(KEY_DRIVER_OPTIONS)
-        out_files = os.path.join(self.data_path, 'files')
-        self.web_crawler = GenericCrawler(self.cfg_params[KEY_START_URL], self.tables_out_path, out_files,
+        kbc_runid = os.environ.get('KBC_RUNID')
+        self.web_crawler = GenericCrawler(self.cfg_params[KEY_START_URL], self.tables_out_path, self.data_path,
+                                          runid=kbc_runid,
                                           random_wait_range=random_wait, options=options,
                                           docker_mode=self.cfg_params.get(KEY_DOCKER_MODE, True),
                                           resolution=self.cfg_params.get(KEY_RESOLUTION))
