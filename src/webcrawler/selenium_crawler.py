@@ -297,7 +297,8 @@ class CrawlerActionBuilder:
 
 class GenericCrawler:
 
-    def __init__(self, start_url, download_folder, docker_mode=True, random_wait_range=None, resolution='1920x1080',
+    def __init__(self, start_url, download_folder, files_folder, docker_mode=True, random_wait_range=None,
+                 resolution='1920x1080',
                  proxy=None,
                  driver_type='Chrome',
                  options=None):
@@ -314,6 +315,7 @@ class GenericCrawler:
         self.start_url = start_url
         self.random_wait_range = random_wait_range
         self.download_folder = download_folder
+        self.files_folder = files_folder
         self._docker_mode = docker_mode
 
         self._driver = self._get_driver(driver_type, download_folder, options, docker_mode)
@@ -343,7 +345,8 @@ class GenericCrawler:
         self._driver.maximize_window()
 
     def perform_action(self, action: CrawlerAction):
-        res = action.execute(self._driver, download_folder=self.download_folder, main_handle=self._main_window_handle)
+        res = action.execute(self._driver, download_folder=self.download_folder, files_folder=self.files_folder,
+                             main_handle=self._main_window_handle)
 
         self._wait_random(self.random_wait_range)
         return res

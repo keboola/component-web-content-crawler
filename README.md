@@ -291,6 +291,24 @@ This action navigates back to the main window. After the work is done action `Sw
 }
 ```
 
+##### **TakeScreenshot**
+
+This action takes a screenshot of current state and stores it in `data/out/files` path. 
+
+The name parameter must be specified and defines the name of the resulting png file. E.g. `"name": "main_page"` results in 
+`data/out/files/main_page.png` file.
+
+
+```json
+{
+   "description":"Take screenshot of a main page",
+   "action_name":"TakeScreenshot",
+   "action_parameters":{
+      "name": "main_page"
+   }
+}
+```
+
 ##### **Wait**
 
 This action pauses execution for specified amount of time (in seconds). 

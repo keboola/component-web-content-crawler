@@ -6,6 +6,7 @@ Template Component main class.
 import argparse
 import json
 import logging
+import os
 
 from kbc.env_handler import KBCEnvHandler
 from nested_lookup import nested_lookup
@@ -59,7 +60,8 @@ class Component(KBCEnvHandler):
         # intialize instance parameters
         random_wait = self.cfg_params.get(KEY_RANDOM_WAIT, None)
         options = self.cfg_params.get(KEY_DRIVER_OPTIONS)
-        self.web_crawler = GenericCrawler(self.cfg_params[KEY_START_URL], self.tables_out_path,
+        out_files = os.path.join(self.data_path, 'files')
+        self.web_crawler = GenericCrawler(self.cfg_params[KEY_START_URL], self.tables_out_path, out_files,
                                           random_wait_range=random_wait, options=options,
                                           docker_mode=self.cfg_params.get(KEY_DOCKER_MODE, True),
                                           resolution=self.cfg_params.get(KEY_RESOLUTION))
