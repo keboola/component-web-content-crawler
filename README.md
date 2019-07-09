@@ -4,8 +4,9 @@ A Keboola Connection component allowing to perform variety of web browser operat
 and download web content into the Storage. It is useful for instance for navigating through a legacy system web interface 
 and downloading a generated report that would be impossible to export in an automated manner otherwise.
 
-The crawler emulates `Chrome` browser version `73.0.3683.20` operating with window resolution of `1420x1080`. 
-The browser is run with configuration parameter `--no-sandbox` and driver option `"safebrowsing.enabled": False`.
+The crawler emulates in docker mode emulates display with resolution set by default to `1920X1080`, this can be overriden by configuration parameter. It runs `Chrome` browser version `73.0.3683.20` operating with window size of `1024x980`, 
+it is possible to maximize the window on the startup to match the screen. 
+The browser is run with configuration parameter `--no-sandbox` and driver option `"safebrowsing.enabled": False`. 
 
 ## Configuration
 
