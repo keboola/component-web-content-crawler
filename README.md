@@ -293,10 +293,15 @@ This action navigates back to the main window. After the work is done action `Sw
 
 ##### **TakeScreenshot**
 
-This action takes a screenshot of current state and stores it in `data/out/files` path. 
+This action takes a screenshot of current state and stores it in specified location 
+and optionally in [ImgBB](https://imgbb.com/) repository.
 
-The name parameter must be specified and defines the name of the resulting png file. E.g. `"name": "main_page"` results in 
-`data/out/files/main_page.png` file.
+###### Parameters
+- **name** - [REQ] The name parameter must be specified and defines the name of the resulting png file. E.g. `"name": "main_page"` results in 
+`data/screens/main_page.png` file.
+- **folder** - [OPT] Specifies the screenshot folder name in the `/data` folder. By default set to `screens`
+- **imgbb_token** - [OPT] Your personal [imgbb token](https://api.imgbb.com/). The resulting files are stored in 
+form `[KBC_RUNID]_[name].png`
 
 
 ```json
@@ -304,7 +309,9 @@ The name parameter must be specified and defines the name of the resulting png f
    "description":"Take screenshot of a main page",
    "action_name":"TakeScreenshot",
    "action_parameters":{
-      "name": "main_page"
+      "name": "main_page",
+      "folder": "out/files",
+      "imgbb_token": "sasdasdasd"
    }
 }
 ```
