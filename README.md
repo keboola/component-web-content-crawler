@@ -311,7 +311,7 @@ form `[KBC_RUNID]_[name].png`
    "action_parameters":{
       "name": "main_page",
       "folder": "out/files",
-      "imgbb_token": "sasdasdasd"
+      "#imgbb_token": "sasdasdasd"
    }
 }
 ```

@@ -292,6 +292,9 @@ class CrawlerActionBuilder:
         if action_name == 'ConditionalAction':
             cond_action = supported_actions[action_name](**parameters)
             return CrawlerActionBuilder._build_conditional_action(cond_action)
+        elif action_name == 'TakeScreenshot':
+            parameters['imgbb_token'] = parameters.pop('#imgbb_token', None)
+            return supported_actions[action_name](**parameters)
         else:
             return supported_actions[action_name](**parameters)
 
