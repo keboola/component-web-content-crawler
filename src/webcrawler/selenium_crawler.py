@@ -3,10 +3,10 @@ import base64
 import logging
 import os
 import random
+import time
 
 import pyscreenshot as ImageGrab
 import requests
-import time
 from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException

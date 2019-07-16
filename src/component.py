@@ -67,6 +67,8 @@ class Component(KBCEnvHandler):
                                           docker_mode=self.cfg_params.get(KEY_DOCKER_MODE, True),
                                           resolution=self.cfg_params.get(KEY_RESOLUTION))
 
+        self.user_functions = Component.UserFunctions(self)
+
     def run(self, debug=False):
         """
         Main execution code
@@ -120,6 +122,10 @@ class Component(KBCEnvHandler):
         steps_string = json.dumps(crawler_steps, separators=(',', ':'))
         # dirty and ugly replace
         for key in user_param:
+            if isinstance(user_param[key], dict):
+                # in case the parameter is function, validate, execute and replace value with result
+                user_param[key] = self._perform_custom_function(key, user_param[key])
+
             lookup_str = '{"attr":"' + key + '"}'
             steps_string = steps_string.replace(lookup_str, '"' + str(user_param[key]) + '"')
         new_steps = json.loads(steps_string)
@@ -130,6 +136,42 @@ class Component(KBCEnvHandler):
                 'Some user attributes [{}] specified in configuration '
                 'are not present in "user_parameters" field.'.format(non_matched))
         return new_steps
+
+    def _perform_custom_function(self, key, function_cfg):
+        if not function_cfg.get('function'):
+            raise ValueError(
+                F'The user parameter {key} value is object and is not a valid function object: {function_cfg}')
+
+        return self.user_functions.execute_function(function_cfg['function'], *function_cfg.get('args'))
+
+    class UserFunctions:
+        """
+        Custom function to be used in configruation
+        """
+
+        def __init__(self, component: KBCEnvHandler):
+            # get access to the environment
+            self.kbc_env = component
+
+        def validate_function_name(self, function_name):
+            supp_functions = self.get_supported_functions()
+            if function_name not in self.get_supported_functions():
+                raise ValueError(
+                    F"Specified user function [{function_name}] is not supported! "
+                    F"Supported functions are {supp_functions}")
+
+        @staticmethod
+        def get_supported_functions():
+            return [method_name for method_name in dir(Component.UserFunctions)
+                    if callable(getattr(Component.UserFunctions, method_name)) and not method_name.startswith('__')]
+
+        def execute_function(self, function_name, *pars):
+            self.validate_function_name(function_name)
+            return getattr(Component.UserFunctions, function_name)(self, *pars)
+
+        def string_to_date(self, date_string, date_format='%Y-%m-%d'):
+            start_date, end_date = self.kbc_env.get_date_period_converted(date_string, date_string)
+            return start_date.strftime(date_format)
 
 
 """
