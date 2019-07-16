@@ -97,13 +97,25 @@ The function takes two arguments:
 **Example**
 
 ```json
-{ "function": "string_to_date",
-                "args": [
-                  "yesterday",
-                  "%Y-%m-%d"
-                ]
-              }
+{
+   "user_parameters":{
+      "yesterday_date":{
+         "function":"string_to_date",
+         "args":[
+            "yesterday",
+            "%Y-%m-%d"
+         ]
+      }
+   }
+}
 ```
+
+The above value is then available in step contexts as:
+
+```json
+"to_date": {"attr": "yesterday_date"}
+```
+
 
 
 
