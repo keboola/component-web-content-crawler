@@ -55,14 +55,59 @@ between 1s and 5s, the actual wait time is chosen randomly within these boundari
 - **maximize_window** - (OPT) Boolean value flagging whether to maximize the window to match the max resolution. Default is `false`.
 - **user_parameters** – A list of user parameters that is are accessible from within actions. This is useful for storing 
 for example user credentials that are to be filled in a login form. Appending `#` sign before the attribute name will hash the value and store it securely 
-within the configuration (recommended for passwords).
+within the configuration (recommended for passwords). The value may be scalar or a supported function.
 - **store_cookies** – If set to true the crawler will store cookies from the last time and use it every consecutive run. 
 This is useful for storing credentials and also making the browser legit for the target system, e.g. logging in with Google.
 - **docker_mode** - Set to `true` for run in KBC. This option enables display emulation so it can be run in Docker container without a `headless` mode. 
 Set to `false` for local development, so you can see the actual browser on your local machine.
 - **Steps** – An array of `Step` objects that are grouping a set of `Actions`. More information in sections below.
 
-### `Step` object
+
+### Dynamic Functions
+
+The application support functions that may be applied on parameters in the configuration to get dynamic values.
+
+Currently these functions work only in the `user_parameters` scope. Place the required function object instead of the user parameter value.
+
+**Function object**
+
+```json
+{ "function": "string_to_date",
+                "args": [
+                  "yesterday",
+                  "%Y-%m-%d"
+                ]
+              }
+```
+
+#### string_to_date
+
+Function converting string value into a datestring in specified format. The value may be either date in `YYYY-MM-DD` format, 
+or a relative period e.g. `5 hours ago`, `yesterday`,`3 days ago`, `4 months ago`, `2 years ago`, `today`.
+
+The result is returned as a date string in the specified format, by default `%Y-%m-%d`
+
+The function takes two arguments:
+
+1. [REQ] Date string
+2. [OPT] result date format. The format should be defined as in http://strftime.org/
+
+
+
+**Example**
+
+```json
+{ "function": "string_to_date",
+                "args": [
+                  "yesterday",
+                  "%Y-%m-%d"
+                ]
+              }
+```
+
+
+
+### "Step" object
 
 Steps are groups of actions. It is used to logically structure steps taken on the web site and also to 
 divide different branches of execution. For instance: Logging, Navigating, Download file.
