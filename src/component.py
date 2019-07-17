@@ -141,6 +141,12 @@ class Component(KBCEnvHandler):
         if not function_cfg.get('function'):
             raise ValueError(
                 F'The user parameter {key} value is object and is not a valid function object: {function_cfg}')
+        new_args = []
+        for arg in function_cfg.get('args'):
+            if isinstance(arg, dict):
+                arg = self._perform_custom_function(key, arg)
+            new_args.append(arg)
+        function_cfg['args'] = new_args
 
         return self.user_functions.execute_function(function_cfg['function'], *function_cfg.get('args'))
 
@@ -172,6 +178,9 @@ class Component(KBCEnvHandler):
         def string_to_date(self, date_string, date_format='%Y-%m-%d'):
             start_date, end_date = self.kbc_env.get_date_period_converted(date_string, date_string)
             return start_date.strftime(date_format)
+
+        def concat(self, *args):
+            return ''.join(args)
 
 
 """
