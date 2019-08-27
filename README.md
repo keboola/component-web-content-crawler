@@ -119,9 +119,9 @@ The above parameters may be accessed from within `Actions` like that:
           "action_name": "GenericElementAction",
           "action_parameters": {
             "xpath": "//*[@id=\"password\"]",
-            "positional_arguments": {
+            "positional_arguments":[{
               "attr": "#password"
-            },
+            }],
             "method_name": "send_keys"
           }
         }
