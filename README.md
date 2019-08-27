@@ -1,16 +1,16 @@
 # KBC Selenium web crawler
 
-A Keboola Connection component allowing to perform variety of web browser operations on any web-site 
-and download web content into the Storage. It is useful for instance for navigating through a legacy system web interface 
+A Keboola Connection component allowing to perform variety of web browser operations on any web-site
+and download web content into the Storage. It is useful for instance for navigating through a legacy system web interface
 and downloading a generated report that would be impossible to export in an automated manner otherwise.
 
-The crawler emulates in docker mode emulates display with resolution set by default to `1920X1080`, this can be overriden by configuration parameter. It runs `Chrome` browser version `73.0.3683.20` operating with window size of `1024x980`, 
-it is possible to maximize the window on the startup to match the screen. 
-The browser is run with configuration parameter `--no-sandbox` and driver option `"safebrowsing.enabled": False`. 
+The crawler emulates in docker mode emulates display with resolution set by default to `1920X1080`, this can be overriden by configuration parameter. It runs `Chrome` browser version `73.0.3683.20` operating with window size of `1024x980`,
+it is possible to maximize the window on the startup to match the screen.
+The browser is run with configuration parameter `--no-sandbox` and driver option `"safebrowsing.enabled": False`.
 
 ## Configuration
 
-The crawler is configurable via JSON, where you define each `Action` as an object. These `Action` objects define 
+The crawler is configurable via JSON, where you define each `Action` as an object. These `Action` objects define
 a real web browser action a user would make, e.g. click an object, fill in a form, etc.
 
 ### Configuration Structure
@@ -48,19 +48,88 @@ a real web browser action a user would make, e.g. click an object, fill in a for
 **Parameters**
 
 - **start_url** – An URL of the page where the crawler starts off.
-- **random_wait_range** - A time range in seconds defining how long should the crawler wait between each action. 
-The interval is defined by boundaries in seconds, e.g. [1, 5] means that the crawler will wait between each action anywhere 
+- **random_wait_range** - A time range in seconds defining how long should the crawler wait between each action.
+The interval is defined by boundaries in seconds, e.g. [1, 5] means that the crawler will wait between each action anywhere
 between 1s and 5s, the actual wait time is chosen randomly within these boundaries.
 - **resolution** - (OPT) resolution of the screen as a string, e.g. `1024x980`. The default value is `1920x1080`.
 - **maximize_window** - (OPT) Boolean value flagging whether to maximize the window to match the max resolution. Default is `false`.
-- **user_parameters** – A list of user parameters that is are accessible from within actions. This is useful for storing 
-for example user credentials that are to be filled in a login form. Appending `#` sign before the attribute name will hash the value and store it securely 
+- **user_parameters** – A list of user parameters that is are accessible from within actions. This is useful for storing
+for example user credentials that are to be filled in a login form. Appending `#` sign before the attribute name will hash the value and store it securely
 within the configuration (recommended for passwords). The value may be scalar or a supported function.
-- **store_cookies** – If set to true the crawler will store cookies from the last time and use it every consecutive run. 
+- **store_cookies** – If set to true the crawler will store cookies from the last time and use it every consecutive run.
 This is useful for storing credentials and also making the browser legit for the target system, e.g. logging in with Google.
-- **docker_mode** - Set to `true` for run in KBC. This option enables display emulation so it can be run in Docker container without a `headless` mode. 
+- **docker_mode** - Set to `true` for run in KBC. This option enables display emulation so it can be run in Docker container without a `headless` mode.
 Set to `false` for local development, so you can see the actual browser on your local machine.
 - **Steps** – An array of `Step` objects that are grouping a set of `Actions`. More information in sections below.
+
+
+### User parameters
+
+The component support specifying user parameters. These are values that can be accesses from each 
+`Action` instead of hardcoded parameters. This is very useful when need of hashed values (keys prefixed with `#` get encrypted 
+automatically in Keboola Connection.
+
+These parameters also support use of dynamic functions.
+
+In configuration the user parameters are defined in `user_parameters` object. For example:
+
+```json
+"user_parameters": {
+    "username": "myUser",
+    "#password": "xxx",
+    "report_format": "CSV",
+    "url":{
+         "function":"concat",
+         "args":[
+            "http://example.com",
+            "/test?date=",
+            { "function": "string_to_date",
+                "args": [
+                  "yesterday",
+                  "%Y-%m-%d"
+                ]
+              }
+         ]
+      }
+  }
+```
+
+The above parameters may be accessed from within `Actions` like that:
+
+**Get URL with dynamic date**
+
+```json
+{
+   "description":"Get file from url",
+   "action_name":"GenericDriverAction",
+   "action_parameters":{
+      "positional_arguments":[
+         {"attr": "url"}
+      ],
+      "method_name":"get"
+   }
+}
+```
+
+**Fill in password from hashed user value**
+
+```json
+{
+          "description": "Input password.",
+          "action_name": "GenericElementAction",
+          "action_parameters": {
+            "xpath": "//*[@id=\"password\"]",
+            "positional_arguments": {
+              "attr": "#password"
+            },
+            "method_name": "send_keys"
+          }
+        }
+```
+
+
+
+
 
 
 ### Dynamic Functions
@@ -80,9 +149,34 @@ Currently these functions work only in the `user_parameters` scope. Place the re
               }
 ```
 
+**Function Nesting**
+
+Nesting of functions is supported:
+
+```json
+{
+   "user_parameters":{
+      "url":{
+         "function":"concat",
+         "args":[
+            "http://example.com",
+            "/test?date=",
+            { "function": "string_to_date",
+                "args": [
+                  "yesterday",
+                  "%Y-%m-%d"
+                ]
+              }
+         ]
+      }
+   }
+}
+
+```
+
 #### string_to_date
 
-Function converting string value into a datestring in specified format. The value may be either date in `YYYY-MM-DD` format, 
+Function converting string value into a datestring in specified format. The value may be either date in `YYYY-MM-DD` format,
 or a relative period e.g. `5 hours ago`, `yesterday`,`3 days ago`, `4 months ago`, `2 years ago`, `today`.
 
 The result is returned as a date string in the specified format, by default `%Y-%m-%d`
@@ -116,12 +210,42 @@ The above value is then available in step contexts as:
 "to_date": {"attr": "yesterday_date"}
 ```
 
+#### concat
+
+Concat an array of strings.
+
+The function takes an array of strings to concat as an argument
+
+
+
+**Example**
+
+```json
+{
+   "user_parameters":{
+      "url":{
+         "function":"concat",
+         "args":[
+            "http://example.com",
+            "/test"
+         ]
+      }
+   }
+}
+```
+
+The above value is then available in step contexts as:
+
+```json
+"url": {"attr": "url"}
+```
+
 
 
 
 ### "Step" object
 
-Steps are groups of actions. It is used to logically structure steps taken on the web site and also to 
+Steps are groups of actions. It is used to logically structure steps taken on the web site and also to
 divide different branches of execution. For instance: Logging, Navigating, Download file.
 
 Future version will support iterations on a particular step.
@@ -172,7 +296,7 @@ Action define a user action in the browser, e.g. click, fill in a form, wait, na
 
 ##### **ClickElementToDownload**
 
-This action clicks an element that leads to a file that should be stored in the Storage. It performs the click and waits until the 
+This action clicks an element that leads to a file that should be stored in the Storage. It performs the click and waits until the
 file is downloaded.
 
 ###### Parameters
@@ -213,7 +337,7 @@ This action waits for an element before it becomes available in the DOM. Useful 
 
 ##### **ClickElementToDownload**
 
-This action clicks an element that leads to a file that should be stored in the Storage. It performs the click and waits until the 
+This action clicks an element that leads to a file that should be stored in the Storage. It performs the click and waits until the
 file is downloaded.
 
 ###### Parameters
@@ -235,8 +359,8 @@ file is downloaded.
 
 ##### **GenericElementAction**
 
-A generic action performed on the specified element. This action is a wrapper allowing execution of any 
-method defined for [`selenium.webdriver.remote.webelement`](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webelement.html). 
+A generic action performed on the specified element. This action is a wrapper allowing execution of any
+method defined for [`selenium.webdriver.remote.webelement`](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webelement.html).
 To see the list of all supported actions and its parameters see the [selenium documentation](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webelement.html)
 
 
@@ -244,7 +368,7 @@ To see the list of all supported actions and its parameters see the [selenium do
 - **xpath** - [REQ] XPATH defining the target element.
 - **action_name** - [REQ] Any method name available in the `selenium.webdriver.remote.webelement` interface. e.g. `click`.
 - **positional_arguments** - List of values as defined by the `webelement` method. e.g. ['My text'] for `send_keys(value)` method
-- **[other_parameters]** - any other parameters supported by the `selenium.webdriver.remote.webelement` interface. 
+- **[other_parameters]** - any other parameters supported by the `selenium.webdriver.remote.webelement` interface.
 Note that the parameters must be specified exactly as they are defined on the method and all required parameters are needed.
 - **description** - description of the action. Useful for debugging, the message is included in the job log on execution.
 Example below triggers the [send_keys](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webelement.html#selenium.webdriver.remote.webelement.WebElement.send_keys) method.
@@ -265,19 +389,19 @@ Example below triggers the [send_keys](https://seleniumhq.github.io/selenium/doc
 
 #### **System actions**
 
-These actions are not related to web elements. They usually define actions on the Selenium driver itself. 
+These actions are not related to web elements. They usually define actions on the Selenium driver itself.
 These include for instance navigation between pop-up windows, explicit waiting, etc.
 
 ##### **GenericDriverAction**
 
-This action is a wrapper allowing execution of any 
-method defined for [`selenium.webdriver.remote.webdriver`](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver). 
+This action is a wrapper allowing execution of any
+method defined for [`selenium.webdriver.remote.webdriver`](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver).
 To see the list of all supported actions and its parameters see the [selenium documentation](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver)
 
 
 ###### Parameters
 - **xpath** - [REQ] XPATH defining the target element
-- **[other_parameters]** - any other parameters supported by the [webdriver](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver) interface. 
+- **[other_parameters]** - any other parameters supported by the [webdriver](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver) interface.
 Note that the parameters must be specified exactly as they are defined on the method and all required parameters are needed.
 - **action_name** - [REQ] Any method name available in the `selenium.webdriver` interface. e.g. `implicitly_wait`.
 - **positional_arguments** - List of values as defined by the `webdriver` method.
@@ -326,7 +450,7 @@ NOTSET = 0
 
 ##### **SwitchToPopup**
 
-This action navigates to a newly opened pop-up window. This is useful for instance for navigating into 
+This action navigates to a newly opened pop-up window. This is useful for instance for navigating into
 a new window populated on login button. After the work is done action `SwitchToMainWindow` should be used to navigate back to the main window.
 
 ```json
@@ -351,14 +475,14 @@ This action navigates back to the main window. After the work is done action `Sw
 
 ##### **TakeScreenshot**
 
-This action takes a screenshot of current state and stores it in specified location 
+This action takes a screenshot of current state and stores it in specified location
 and optionally in [ImgBB](https://imgbb.com/) repository.
 
 ###### Parameters
-- **name** - [REQ] The name parameter must be specified and defines the name of the resulting png file. E.g. `"name": "main_page"` results in 
+- **name** - [REQ] The name parameter must be specified and defines the name of the resulting png file. E.g. `"name": "main_page"` results in
 `data/screens/main_page.png` file.
 - **folder** - [OPT] Specifies the screenshot folder name in the `/data` folder. By default set to `screens`
-- **imgbb_token** - [OPT] Your personal [imgbb token](https://api.imgbb.com/). The resulting files are stored in 
+- **imgbb_token** - [OPT] Your personal [imgbb token](https://api.imgbb.com/). The resulting files are stored in
 form `[KBC_RUNID]_[name].png`
 
 
@@ -376,7 +500,7 @@ form `[KBC_RUNID]_[name].png`
 
 ##### **Wait**
 
-This action pauses execution for specified amount of time (in seconds). 
+This action pauses execution for specified amount of time (in seconds).
 
 
 ```json
@@ -391,8 +515,8 @@ This action pauses execution for specified amount of time (in seconds).
 
 ##### **ConditionalAction**
 
-Allows to define an action that is executed based on result of some other action. This is useful for navigation between 
-different execution branches, for instance when using the stored cookies first run might require login credentials and the 
+Allows to define an action that is executed based on result of some other action. This is useful for navigation between
+different execution branches, for instance when using the stored cookies first run might require login credentials and the
 other may not because the token is already saved in the cookie file. This action allows skipping the whole `login` execution step,
 when some defined condition fails.
 
@@ -509,8 +633,8 @@ This action allows breaking the current `Step` execution and skipping to the nex
 
 ## Configuration creation
 
-To configure the web crawler it is needed to know the expected DOM structure of the website crawled. 
-For that it is recommended to run the component locally, executing the `component.py` `run` method. This can be done 
+To configure the web crawler it is needed to know the expected DOM structure of the website crawled.
+For that it is recommended to run the component locally, executing the `component.py` `run` method. This can be done
 either using your favourite IDE such as PyCharm or manually from the command line by running:
 
 ```
@@ -519,19 +643,19 @@ python -u /code/src/component.py
 
 from the root folder.
 
-Please note that you should set up the `KBC_DATADIR` environment variable pointing to your configuration folder 
+Please note that you should set up the `KBC_DATADIR` environment variable pointing to your configuration folder
 in case you do not have the `data` folder present in the root.
 
-For the local development it is also necessary to have Chrome browser installed and set the `dokcer_mode` configuration 
-parameter to `false`. This way it is possible to see the actual effects of each steps defined directly in the browser 
-and develop the configuration step-by-step. For inspecting the DOM structure it is recommended to use the 
+For the local development it is also necessary to have Chrome browser installed and set the `dokcer_mode` configuration
+parameter to `false`. This way it is possible to see the actual effects of each steps defined directly in the browser
+and develop the configuration step-by-step. For inspecting the DOM structure it is recommended to use the
 [Chrome Dev Console](https://developers.google.com/web/tools/chrome-devtools/console/) available by pressing `F12` or right click -> explore element.
 
 
 ## Development
- 
+
 For local testing it is useful to include `data` folder in the root
-and use docker-compose commands to run the container or execute tests. 
+and use docker-compose commands to run the container or execute tests.
 
 If required, change the local data folder path in the `docker-composer` file to your custom one:
 ```yaml
@@ -554,7 +678,7 @@ Run the test suite and lint check using this command:
 ```
 docker-compose run --rm test
 ```
- 
+
 # Integration
 
-For information about deployment and integration with KBC, please refer to the [deployment section of developers documentation](https://developers.keboola.com/extend/component/deployment/) 
+For information about deployment and integration with KBC, please refer to the [deployment section of developers documentation](https://developers.keboola.com/extend/component/deployment/)
