@@ -209,11 +209,10 @@ To see the list of all supported actions and its parameters see the [selenium do
 
 
 **Parameters**
-- **xpath** - [REQ] XPATH defining the target element
-- **[other_parameters]** - any other parameters supported by the [webdriver](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver) interface.
+- **action_parameters** - any other parameters supported by the [webdriver](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver) interface.
 Note that the parameters must be specified exactly as they are defined on the method and all required parameters are needed.
 - **action_name** - [REQ] Any method name available in the `selenium.webdriver` interface. e.g. `implicitly_wait`.
-- **positional_arguments** - List of values as defined by the `webdriver` method.
+- **positional_arguments** - List of positional arguments as defined by the `webdriver` method.
 - **description** - description of the action. Useful for debugging, the message is included in the job log on execution.
 
 Example below triggers the [implicitly_wait](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#selenium.webdriver.remote.webdriver.WebDriver.implicitly_wait) method.
@@ -231,19 +230,19 @@ Example below triggers the [implicitly_wait](https://seleniumhq.github.io/seleni
 }
 ```
 
-##### **DriverSwitchToAction**
+### **DriverSwitchToAction**
 
 This action is a wrapper allowing execution of any
 method defined for [`selenium.webdriver.remote.webdriver`](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver).
 To see the list of all supported actions and its parameters see the [selenium documentation](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver)
 
 
-###### Parameters
-- **xpath** - [REQ] XPATH defining the target element
-- **[other_parameters]** - any other parameters supported by the [webdriver.switch_to](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html?highlight=switch_to#selenium.webdriver.remote.webdriver.WebDriver.switch_to) interface.
+**Parameters**
+
+- **action_parameters** - any other parameters supported by the [webdriver.switch_to](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html?highlight=switch_to#selenium.webdriver.remote.webdriver.WebDriver.switch_to) interface.
 Note that the parameters must be specified exactly as they are defined on the method and all required parameters are needed.
 - **action_name** - [REQ] Any method name available in the `selenium.webdriver.switch_to` interface. e.g. `frame`.
-- **positional_arguments** - List of values as defined by the `webdriver.switch_to` method.
+- **positional_arguments** - List of positional arguments as defined by the `webdriver.switch_to` method.
 - **description** - description of the action. Useful for debugging, the message is included in the job log on execution.
 
 **Supported methods examples**
