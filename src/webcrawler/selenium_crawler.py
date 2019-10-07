@@ -3,10 +3,10 @@ import base64
 import logging
 import os
 import random
-import time
 
 import pyscreenshot as ImageGrab
 import requests
+import time
 from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -204,6 +204,7 @@ class GenericDriverAction(CrawlerAction):
             pass
         return res
 
+
 class DriverSwitchToAction(CrawlerAction):
     def __init__(self, method_name, **kwargs):
         self.method_name = method_name
@@ -254,6 +255,7 @@ class Wait(CrawlerAction):
 
     def execute(self, driver: webdriver, **extra_args):
         time.sleep(self.seconds)
+
 
 class BasicLogin(CrawlerAction):
     """
