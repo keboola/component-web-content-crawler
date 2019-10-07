@@ -1,10 +1,10 @@
-# KBC Selenium web crawler
+# KBC Selenium Web Robot
 
 A Keboola Connection component allowing to perform variety of web browser operations on any web-site
 and download web content into the Storage. It is useful for instance for navigating through a legacy system web interface
 and downloading a generated report that would be impossible to export in an automated manner otherwise.
 
-The crawler emulates in docker mode emulates display with resolution set by default to `1920X1080`, this can be overriden by configuration parameter. It runs `Chrome` browser version `73.0.3683.20` operating with window size of `1024x980`,
+The robot emulates in docker mode emulates display with resolution set by default to `1920X1080`, this can be overriden by configuration parameter. It runs `Chrome` browser version `73.0.3683.20` operating with window size of `1024x980`,
 it is possible to maximize the window on the startup to match the screen.
 The browser is run with configuration parameter `--no-sandbox` and driver option `"safebrowsing.enabled": False`.
 
@@ -16,7 +16,7 @@ The browser is run with configuration parameter `--no-sandbox` and driver option
 
 # Configuration
 
-The crawler is configurable via JSON, where you define each `Action` as an object. These `Action` objects define
+The robot is configurable via JSON, where you define each `Action` as an object. These `Action` objects define
 a real web browser action a user would make, e.g. click an object, fill in a form, etc.
 
 ## Configuration Structure
@@ -225,6 +225,45 @@ Example below triggers the [implicitly_wait](https://seleniumhq.github.io/seleni
    "action_parameters":{
       "positional_arguments":[
          60
+      ],
+      "method_name":"implicitly_wait"
+   }
+}
+```
+
+##### **DriverSwitchToAction**
+
+This action is a wrapper allowing execution of any
+method defined for [`selenium.webdriver.remote.webdriver`](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver).
+To see the list of all supported actions and its parameters see the [selenium documentation](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html#module-selenium.webdriver.remote.webdriver)
+
+
+###### Parameters
+- **xpath** - [REQ] XPATH defining the target element
+- **[other_parameters]** - any other parameters supported by the [webdriver.switch_to](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html?highlight=switch_to#selenium.webdriver.remote.webdriver.WebDriver.switch_to) interface.
+Note that the parameters must be specified exactly as they are defined on the method and all required parameters are needed.
+- **action_name** - [REQ] Any method name available in the `selenium.webdriver.switch_to` interface. e.g. `frame`.
+- **positional_arguments** - List of values as defined by the `webdriver.switch_to` method.
+- **description** - description of the action. Useful for debugging, the message is included in the job log on execution.
+
+**Supported methods examples**
+
+	
+- `default_content()` 
+- `frame(‘frame_name’)`
+- `frame(1)`
+- `parent_frame()`
+- `window(‘main’)`
+
+Example below triggers the [frame](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html?highlight=switch_to#selenium.webdriver.remote.webdriver.WebDriver.switch_to_frame) method.
+Switching to iframe with index 1.
+```json
+{
+   "description":"Wait",
+   "action_name":"GenericDriverAction",
+   "action_parameters":{
+      "positional_arguments":[
+         1
       ],
       "method_name":"implicitly_wait"
    }

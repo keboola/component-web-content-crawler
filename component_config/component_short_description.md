@@ -1,1 +1,1 @@
-Crawl website, click elements, download content
+Browse website, click elements, download content as a normal user would do.

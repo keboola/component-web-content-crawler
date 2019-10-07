@@ -3,10 +3,10 @@ import base64
 import logging
 import os
 import random
-import time
 
 import pyscreenshot as ImageGrab
 import requests
+import time
 from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -195,7 +195,32 @@ class GenericDriverAction(CrawlerAction):
     def execute(self, driver: webdriver, **extra_args):
         positional_args = self.method_args.pop('positional_arguments', [])
         method = getattr(driver, self.method_name)
-        return method(*positional_args, **self.method_args)
+        from selenium.common.exceptions import TimeoutException
+        res = None
+        try:
+
+            res = method(*positional_args, **self.method_args)
+        except TimeoutException:
+            pass
+        return res
+
+
+class DriverSwitchToAction(CrawlerAction):
+    def __init__(self, method_name, **kwargs):
+        self.method_name = method_name
+        self.method_args = kwargs
+
+    def execute(self, driver: webdriver, **extra_args):
+        positional_args = self.method_args.pop('positional_arguments', [])
+        method = getattr(driver.switch_to, self.method_name)
+        from selenium.common.exceptions import TimeoutException
+        res = None
+        try:
+
+            res = method(*positional_args, **self.method_args)
+        except TimeoutException:
+            pass
+        return res
 
 
 class SwitchToPopup(CrawlerAction):
@@ -230,6 +255,24 @@ class Wait(CrawlerAction):
 
     def execute(self, driver: webdriver, **extra_args):
         time.sleep(self.seconds)
+
+
+class BasicLogin(CrawlerAction):
+    """
+    Loign using the auth popup
+    """
+
+    def __init__(self, user, password):
+        """
+
+
+        """
+        self.user = user
+        self.password = password
+
+    def execute(self, driver: webdriver, **extra_args):
+        alert = driver.switch_to_alert()
+        alert.authenticate(self.user, self.password)
 
 
 class TakeScreenshot(CrawlerAction):
