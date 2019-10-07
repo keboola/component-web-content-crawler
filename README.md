@@ -258,13 +258,13 @@ Example below triggers the [frame](https://seleniumhq.github.io/selenium/docs/ap
 Switching to iframe with index 1.
 ```json
 {
-   "description":"Wait",
-   "action_name":"GenericDriverAction",
+   "description":"Switch to frame",
+   "action_name":"DriverSwitchToAction",
    "action_parameters":{
       "positional_arguments":[
          1
       ],
-      "method_name":"implicitly_wait"
+      "method_name":"frame"
    }
 }
 ```
