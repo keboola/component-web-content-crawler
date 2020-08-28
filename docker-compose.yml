@@ -20,3 +20,14 @@ services:
     command:
       - /bin/sh
       - build_n_test.sh
+  bash:
+    build: .
+    volumes:
+      - ./:/code
+      - ./data:/data
+    environment:
+      - KBC_DATADIR=./data
+
+    command:
+      - /bin/sh
+      - build_n_test.sh
