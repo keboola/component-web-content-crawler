@@ -32,12 +32,12 @@ a real web browser action a user would make, e.g. click an object, fill in a for
       "username":"user@gmail.com",
       "#password":"XXX"
    },
-   "store_cookies":true,
+   "store_cookies":false,
    "docker_mode":false,
-   "Steps":[
+   "steps":[
       {
          "description":"Step description, useful for debugging.",
-         "Actions":[
+         "actions":[
             {
                "description":"Action description, useful for debugging",
                "action_name":"ACTION_NAME",
@@ -681,7 +681,8 @@ from the root folder.
 Please note that you should set up the `KBC_DATADIR` environment variable pointing to your configuration folder
 in case you do not have the `data` folder present in the root.
 
-For the local development it is also necessary to have Chrome browser installed and set the `dokcer_mode` configuration
+For the local development it is also necessary to have Chrome browser 
+and the corresponding [Chrome Driver](https://chromedriver.chromium.org/downloads)  installed and set the `dokcer_mode` configuration
 parameter to `false`. This way it is possible to see the actual effects of each steps defined directly in the browser
 and develop the configuration step-by-step. For inspecting the DOM structure it is recommended to use some Chrome extension 
 that allows you to retrieve xPath of selected elements for instance  [`xpath-finder`](https://github.com/trembacz/xpath-finder)
