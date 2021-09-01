@@ -3,10 +3,10 @@ import base64
 import logging
 import os
 import random
+import time
 
 import pyscreenshot as ImageGrab
 import requests
-import time
 from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -140,6 +140,28 @@ class PrintHtmlPage(CrawlerAction):
         html = driver.page_source
         if self.log_level:
             logging.log(self.log_level, html)
+
+
+class DownloadPageContent(CrawlerAction):
+    def __init__(self, result_file_name, url=None):
+        self.result_file_name = result_file_name
+        self.url = url
+
+    def execute(self, driver: webdriver, **extra_args):
+        download_folder = extra_args.pop('download_folder')
+        res_file_path = os.path.join(download_folder, self.result_file_name)
+
+        url = self.url or driver.current_url
+        # get cookies
+        cookies = driver.get_cookies()
+        s = requests.Session()
+        for cookie in cookies:
+            s.cookies.set(cookie['name'], cookie['value'])
+
+        res = s.get(url, stream=True)
+        with open(res_file_path, 'wb+') as out:
+            for chunk in res.iter_content(chunk_size=8192):
+                out.write(chunk)
 
 
 class ConditionalAction(CrawlerAction):
