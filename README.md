@@ -295,6 +295,33 @@ NOTSET = 0
 }
 ```
 
+### **DownloadPageContent**
+
+This action allows you to download whatever content is on the current or specified URL. 
+The usecase may be downloading a JSON, CSV or any arbitrary file that is on specified URL. The response is streamed, 
+so it supports large files.
+
+All context of the browser such as cookies is maintained. 
+
+Typical usecase would be to login in previous steps and then call this method to download.
+
+
+
+**Parameters**
+- **result_file_name** - [REQUIRED] Result file name, e.g. 'report.json' it will be stored in 'out/tables/report.json' location
+- **url** - [OPT] Optional URL of the resource. If left empty the current url of the browser is downloaded.
+
+```json
+{
+            "action_name": "DownloadPageContent",            
+            "description": "Download report JSON",
+            "action_parameters": {
+              "url": "https://example.com/finance/report",
+              "result_file_name": "report.json"
+            }
+          }
+```
+
 
 ### **SwitchToPopup**
 
