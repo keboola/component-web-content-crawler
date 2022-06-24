@@ -322,6 +322,40 @@ Typical usecase would be to login in previous steps and then call this method to
           }
 ```
 
+### **SaveCookieFile**
+
+This action allows you to store current cookies in a file storage.
+
+The cookies file will be stored in json format `out/files/cookies.json`. With the following structure:
+```json
+{
+ "cookies": [
+  {
+   "domain": "xxx"
+  }
+ ]
+}
+```
+
+
+
+**Parameters**
+- **tags** - [REQUIRED] List of tags the file will be stored with
+- **is_permanent** - [OPT] Optional flag If true the cookies.json file will be stored permanently. DEFAULT: False
+
+```json
+{
+ "description": "Save Cookie",
+ "action_name": "SaveCookieFile",
+ "action_parameters": {
+  "tags": [
+   "test_tag"
+  ],
+  "is_permanent": true
+ }
+}
+```
+
 
 ### **SwitchToPopup**
 

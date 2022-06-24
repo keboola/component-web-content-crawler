@@ -1,12 +1,15 @@
 import abc
 import base64
+import json
 import logging
 import os
 import random
 import time
+from typing import List
 
 import pyscreenshot as ImageGrab
 import requests
+from keboola.component import ComponentBase
 from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -43,7 +46,7 @@ class ClickElementToDownload(CrawlerAction):
     def execute(self, driver: webdriver, **extra_args):
         download_folder = extra_args.pop('download_folder')
         exisitng_files = [f for f in os.listdir(download_folder) if os.path.isfile(os.path.join(download_folder, f))]
-        driver.find_element_by_xpath(self.xpath).click()
+        driver.find_element(By.XPATH, self.xpath).click()
         time.sleep(self.delay)
         self._wait_until_new_file(exisitng_files, self.timeout, download_folder)
 
@@ -82,7 +85,7 @@ class GenericShadowDomElementAction(CrawlerAction):
 
     def find_shadow_dom_element(self, xpath, driver, root_element_tag):
         shadow_root = self.get_ext_shadow_root(driver, driver.find_element_by_tag_name(root_element_tag))
-        element = shadow_root.find_element_by_xpath(xpath)
+        element = shadow_root.find_element(By.XPATH, xpath)
         return element
 
     def get_ext_shadow_root(self, driver, element):
@@ -98,7 +101,7 @@ class GenericElementAction(CrawlerAction):
 
     def execute(self, driver: webdriver, **extra_args):
         positional_args = self.method_args.pop('positional_arguments', [])
-        element = driver.find_element_by_xpath(self.xpath)
+        element = driver.find_element(By.XPATH, self.xpath)
         method = getattr(element, self.method_name)
         return method(*positional_args, **self.method_args)
 
@@ -162,6 +165,34 @@ class DownloadPageContent(CrawlerAction):
         with open(res_file_path, 'wb+') as out:
             for chunk in res.iter_content(chunk_size=8192):
                 out.write(chunk)
+
+
+class SaveCookieFile(CrawlerAction):
+    """
+    Stores cookies.json in out/files folder for later reference.
+    """
+
+    def __init__(self, tags: List[str], is_permanent: bool = False):
+        """
+
+        Args:
+            tags: list of tags to add to the file
+            is_permanent (bool): If true the cookies.json file will be stored permanently
+        """
+        self.tags = tags
+        self.is_permanent = is_permanent
+
+    def execute(self, driver: webdriver, **extra_args):
+        component: ComponentBase = extra_args.pop('component_interface')
+        out_file = component.create_out_file_definition('cookies.json', tags=self.tags, is_permanent=self.is_permanent)
+        res_file_path = out_file.full_path
+
+        # get cookies
+        cookies = driver.get_cookies()
+
+        with open(res_file_path, 'w+') as out:
+            json.dump({"cookies": cookies}, out)
+        component.write_manifest(out_file)
 
 
 class ConditionalAction(CrawlerAction):
@@ -393,7 +424,8 @@ class CrawlerActionBuilder:
 
 class GenericCrawler:
 
-    def __init__(self, start_url, download_folder, data_folder, runid='', docker_mode=True, random_wait_range=None,
+    def __init__(self, start_url, download_folder, component_interface: ComponentBase, runid='', docker_mode=True,
+                 random_wait_range=None,
                  resolution='1920x1080',
                  proxy=None,
                  driver_type='Chrome',
@@ -406,12 +438,12 @@ class GenericCrawler:
         if len(res_sizes) != 2:
             raise ValueError("Resolution is in invalid format, you must provide it as WIDTHxEIGHT. e.g. 1024x980")
         if docker_mode:
-            self._display = Display(visible=0, size=(res_sizes[0], res_sizes[1]))
+            self._display = Display(visible=False, size=(int(res_sizes[0]), int(res_sizes[1])))
             self._display.start()
         self.start_url = start_url
         self.random_wait_range = random_wait_range
         self.download_folder = download_folder
-        self.data_folder = data_folder
+        self.component_interface = component_interface
         self.runid = runid
         self._docker_mode = docker_mode
 
@@ -442,7 +474,10 @@ class GenericCrawler:
         self._driver.maximize_window()
 
     def perform_action(self, action: CrawlerAction):
-        res = action.execute(self._driver, download_folder=self.download_folder, data_folder=self.data_folder,
+        data_folder = self.component_interface.data_folder_path
+        res = action.execute(self._driver, download_folder=self.download_folder,
+                             data_folder=data_folder,
+                             component_interface=self.component_interface,
                              runid=self.runid, main_handle=self._main_window_handle)
 
         self._wait_random(self.random_wait_range)
