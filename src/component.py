@@ -8,7 +8,8 @@ import json
 import logging
 import os
 
-from kbc.env_handler import KBCEnvHandler
+import keboola.utils as kutils
+from keboola.component import ComponentBase, UserException
 from nested_lookup import nested_lookup
 
 from webcrawler.selenium_crawler import BreakBlockExecution
@@ -32,40 +33,30 @@ KEY_ACTION_PARAMETERS = 'action_parameters'
 KEY_ACTION_NAME = 'action_name'
 
 MANDATORY_PARS = [KEY_STEPS, KEY_START_URL]
-MANDATORY_IMAGE_PARS = []
-
-APP_VERSION = '0.0.1'
 
 
-class Component(KBCEnvHandler):
+class Component(ComponentBase):
 
-    def __init__(self, debug=False, data_path=None):
-        KBCEnvHandler.__init__(self, MANDATORY_PARS, data_path=data_path)
-        # override debug from config
-        if self.cfg_params.get('debug'):
-            debug = True
-
-        self.set_default_logger('DEBUG' if debug else 'INFO')
-        logging.info('Running version %s', APP_VERSION)
-        logging.info('Loading configuration...')
+    def __init__(self, data_path=None):
+        ComponentBase.__init__(self, data_path_override=data_path)
 
         try:
-            self.validate_config()
-            self.validate_image_parameters(MANDATORY_IMAGE_PARS)
+            self.validate_configuration_parameters(MANDATORY_PARS)
         except ValueError as e:
             logging.error(e)
             exit(1)
 
         logging.info("Setting up crawler..")
         # intialize instance parameters
-        random_wait = self.cfg_params.get(KEY_RANDOM_WAIT, None)
-        options = self.cfg_params.get(KEY_DRIVER_OPTIONS)
+        random_wait = self.configuration.parameters.get(KEY_RANDOM_WAIT, None)
+        options = self.configuration.parameters.get(KEY_DRIVER_OPTIONS)
         kbc_runid = os.environ.get('KBC_RUNID')
-        self.web_crawler = GenericCrawler(self.cfg_params[KEY_START_URL], self.tables_out_path, self.data_path,
+        self.web_crawler = GenericCrawler(self.configuration.parameters[KEY_START_URL], self.tables_out_path,
+                                          component_interface=self,
                                           runid=kbc_runid,
                                           random_wait_range=random_wait, options=options,
-                                          docker_mode=self.cfg_params.get(KEY_DOCKER_MODE, True),
-                                          resolution=self.cfg_params.get(KEY_RESOLUTION))
+                                          docker_mode=self.configuration.parameters.get(KEY_DOCKER_MODE, True),
+                                          resolution=self.configuration.parameters.get(KEY_RESOLUTION))
 
         self.user_functions = Component.UserFunctions(self)
 
@@ -73,17 +64,17 @@ class Component(KBCEnvHandler):
         """
         Main execution code
         """
-        crawler_steps = self.cfg_params[KEY_STEPS]
+        crawler_steps = self.configuration.parameters[KEY_STEPS]
 
-        crawler_steps = self._fill_in_user_parameters(crawler_steps, self.cfg_params.get(KEY_USER_PARS))
+        crawler_steps = self._fill_in_user_parameters(crawler_steps, self.configuration.parameters.get(KEY_USER_PARS))
 
         logging.info("Entering first step URL %s", self.web_crawler.start_url)
         self.web_crawler.start()
-        if self.cfg_params.get(KEY_MAX_WINDOW):
+        if self.configuration.parameters.get(KEY_MAX_WINDOW):
             self.web_crawler.maximize_window()
 
         # set cookies, needs to be done after the domain load
-        if self.cfg_params.get(KEY_STORE_COOKIES):
+        if self.configuration.parameters.get(KEY_STORE_COOKIES):
             logging.info('Loading cookies from last run.')
             last_state = self.get_state_file()
             self.web_crawler.load_cookies(last_state.get('cookies'))
@@ -92,7 +83,7 @@ class Component(KBCEnvHandler):
             logging.info(st.get(KEY_DESCRIPTION, ''))
             self._perform_crawler_actions(st.get(KEY_ACTIONS))
 
-        if self.cfg_params.get(KEY_STORE_COOKIES):
+        if self.configuration.parameters.get(KEY_STORE_COOKIES):
             logging.info('Storing cookies for next run.')
             cookies = self.web_crawler.get_cookies()
             state = {'cookies': cookies}
@@ -155,7 +146,7 @@ class Component(KBCEnvHandler):
         Custom function to be used in configruation
         """
 
-        def __init__(self, component: KBCEnvHandler):
+        def __init__(self, component: ComponentBase):
             # get access to the environment
             self.kbc_env = component
 
@@ -176,8 +167,8 @@ class Component(KBCEnvHandler):
             return getattr(Component.UserFunctions, function_name)(self, *pars)
 
         def string_to_date(self, date_string, date_format='%Y-%m-%d'):
-            start_date, end_date = self.kbc_env.get_date_period_converted(date_string, date_string)
-            return start_date.strftime(date_format)
+            start_date, end_date = kutils.parse_datetime_interval(date_string, date_string, strformat=date_format)
+            return start_date
 
         def concat(self, *args):
             return ''.join(args)
@@ -191,13 +182,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--data', help='Data folder path')
-    parser.add_argument('--debug', help='Debug mode')
 
     args = parser.parse_args()
-    if args.debug:
-        debug = True
-    else:
-        debug = False
-
-    comp = Component(debug=debug, data_path=args.data)
-    comp.run()
+    try:
+        comp = Component(data_path=args.data)
+        # this triggers the run method by default and is controlled by the configuration.action parameter
+        comp.execute_action()
+    except UserException as exc:
+        detail = ''
+        if len(exc.args) > 1:
+            detail = exc.args[1]
+        logging.exception(exc, extra={"full_message": detail})
+        exit(1)
+    except Exception as exc:
+        logging.exception(exc)
+        exit(2)
