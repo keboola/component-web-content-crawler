@@ -11,6 +11,7 @@ import os
 import keboola.utils as kutils
 from keboola.component import ComponentBase, UserException
 from nested_lookup import nested_lookup
+from selenium.common.exceptions import WebDriverException
 
 from webcrawler.selenium_crawler import BreakBlockExecution
 from webcrawler.selenium_crawler import CrawlerActionBuilder
@@ -101,12 +102,14 @@ class Component(ComponentBase):
 
             logging.info(a.get(KEY_DESCRIPTION, ''))
             action = CrawlerActionBuilder.build(a[KEY_ACTION_NAME], **action_params)
+            try:
+                res = self.web_crawler.perform_action(action)
 
-            res = self.web_crawler.perform_action(action)
-
-            # check if is break action
-            if isinstance(res, BreakBlockExecution):
-                break
+                # check if is break action
+                if isinstance(res, BreakBlockExecution):
+                    break
+            except WebDriverException as e:
+                raise UserException(f"Action '{a[KEY_ACTION_NAME]}' failed with error: {e.msg}") from e
 
     def _fill_in_user_parameters(self, crawler_steps, user_param):
         # convert to string minified
