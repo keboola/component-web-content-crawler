@@ -13,6 +13,7 @@ from keboola.component import ComponentBase
 from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
+from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
@@ -104,6 +105,16 @@ class GenericElementAction(CrawlerAction):
         element = driver.find_element(By.XPATH, self.xpath)
         method = getattr(element, self.method_name)
         return method(*positional_args, **self.method_args)
+
+
+class MoveToElement(CrawlerAction):
+    def __init__(self, xpath: str):
+        self.xpath = xpath
+
+    def execute(self, driver: webdriver, **extra_args):
+        element = driver.find_element(By.XPATH, self.xpath)
+        ActionChains(driver).move_to_element(element).perform()
+        return element
 
 
 class WaitForElement(CrawlerAction):
