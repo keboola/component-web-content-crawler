@@ -167,7 +167,9 @@ e.g. all JS code is executed.
 
 ### **MoveToElement**
 
-This action waits moves mouse to the specified element.
+This action waits moves mouse to the specified element. 
+
+Executes the ActionChain method [move_to_element](https://selenium-python.readthedocs.io/api.html?highlight=mouse#selenium.webdriver.common.action_chains.ActionChains.move_to_element)
 
 **Parameters**
 
