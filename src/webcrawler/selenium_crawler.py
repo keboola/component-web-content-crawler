@@ -9,7 +9,7 @@ from typing import List
 
 import pyscreenshot as ImageGrab
 import requests
-from keboola.component import ComponentBase
+from keboola.component import ComponentBase, UserException
 from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -115,6 +115,27 @@ class MoveToElement(CrawlerAction):
         element = driver.find_element(By.XPATH, self.xpath)
         ActionChains(driver).move_to_element(element).perform()
         return element
+
+
+class ExitAction(CrawlerAction):
+    def __init__(self, status: int, message: str):
+        self.status = status
+        self.message = message
+
+    def execute(self, driver: webdriver, **extra_args):
+        if self.status >= 1:
+            raise UserException(f"Execution stopped with message: {self.message}")
+        else:
+            logging.info(f"Execution stopped with message: {self.message}")
+
+
+class TypeText(CrawlerAction):
+    def __init__(self, **kwargs):
+        self.method_args = kwargs
+
+    def execute(self, driver: webdriver, **extra_args):
+        positional_args = self.method_args.pop('positional_arguments', [])
+        ActionChains(driver).send_keys(*positional_args)
 
 
 class WaitForElement(CrawlerAction):
