@@ -10,7 +10,6 @@ from typing import List
 import pyscreenshot as ImageGrab
 import requests
 from keboola.component import ComponentBase, UserException
-from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import ActionChains
@@ -469,9 +468,9 @@ class GenericCrawler:
         res_sizes = resolution.split('x')
         if len(res_sizes) != 2:
             raise ValueError("Resolution is in invalid format, you must provide it as WIDTHxEIGHT. e.g. 1024x980")
-        if docker_mode:
-            self._display = Display(visible=False, size=(int(res_sizes[0]), int(res_sizes[1])))
-            self._display.start()
+        # if docker_mode:
+        #     self._display = Display(visible=False, size=(int(res_sizes[0]), int(res_sizes[1])))
+        #     self._display.start()
         self.start_url = start_url
         self.random_wait_range = random_wait_range
         self.download_folder = download_folder
@@ -499,8 +498,8 @@ class GenericCrawler:
 
     def stop(self):
         self._driver.quit()
-        if self._docker_mode:
-            self._display.stop()
+        # if self._docker_mode:
+        #     self._display.stop()
 
     def maximize_window(self):
         self._driver.maximize_window()
@@ -527,6 +526,13 @@ class GenericCrawler:
             # TODO: remove hardcoding
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-features=VizDisplayCompositor')
+            if docker_mode:
+                options.add_argument('--headless')
+
+            # options.add_argument("disable-infobars")
+            # options.add_argument("--disable-extensions")
+            # options.add_argument("--disable-gpu")  # applicable to windows os only
+            # options.add_argument("--disable-dev-shm-usage")  # overcome limited resource problems
             # start maximized does not work when in docker mode
             driver = webdriver.Chrome(options=options)
             # self.enable_download_in_headless_chrome()
