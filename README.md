@@ -499,6 +499,29 @@ This action allows breaking the current `Step` execution and skipping to the nex
   "action_name": "BreakBlockExecution"
 }
 ```
+### **ExitAction**
+
+This action allows you to stop the execution any time with specified status and message
+
+Supported levels are:
+CRITICAL = 50 ERROR = 40 WARNING = 30 INFO = 20 DEBUG = 10 NOTSET = 0
+
+**Parameters**
+
+- **status** - Int number specifying the exit status. Anything `>=1` will result in error. `0` is success.
+- **message** - Message that will be printed in the log.
+
+```json
+{
+  "description": "Stop execution",
+  "action_name": "ExitAction",
+  "action_parameters": {
+    "status": 1,
+    "message": "Failed execution because user wanted to!"
+  }
+}
+```
+
 
 ## User parameters
 

@@ -13,7 +13,7 @@ from keboola.component import ComponentBase, UserException
 from nested_lookup import nested_lookup
 from selenium.common.exceptions import WebDriverException
 
-from webcrawler.selenium_crawler import BreakBlockExecution
+from webcrawler.selenium_crawler import BreakBlockExecution, ExitAction
 from webcrawler.selenium_crawler import CrawlerActionBuilder
 from webcrawler.selenium_crawler import GenericCrawler
 
@@ -71,29 +71,36 @@ class Component(ComponentBase):
 
         logging.info("Entering first step URL %s", self.web_crawler.start_url)
         self.web_crawler.start()
-        if self.configuration.parameters.get(KEY_MAX_WINDOW):
-            self.web_crawler.maximize_window()
+        try:
+            if self.configuration.parameters.get(KEY_MAX_WINDOW):
+                self.web_crawler.maximize_window()
 
-        # set cookies, needs to be done after the domain load
-        if self.configuration.parameters.get(KEY_STORE_COOKIES):
-            logging.info('Loading cookies from last run.')
-            last_state = self.get_state_file()
-            self.web_crawler.load_cookies(last_state.get('cookies'))
+            # set cookies, needs to be done after the domain load
+            if self.configuration.parameters.get(KEY_STORE_COOKIES):
+                logging.info('Loading cookies from last run.')
+                last_state = self.get_state_file()
+                self.web_crawler.load_cookies(last_state.get('cookies'))
 
-        for st in crawler_steps:
-            logging.info(st.get(KEY_DESCRIPTION, ''))
-            self._perform_crawler_actions(st.get(KEY_ACTIONS))
+            for st in crawler_steps:
+                logging.info(st.get(KEY_DESCRIPTION, ''))
+                break_call = self._perform_crawler_actions(st.get(KEY_ACTIONS))
+                if break_call:
+                    break
 
-        if self.configuration.parameters.get(KEY_STORE_COOKIES):
-            logging.info('Storing cookies for next run.')
-            cookies = self.web_crawler.get_cookies()
-            state = {'cookies': cookies}
-            self.write_state_file(state)
+            if self.configuration.parameters.get(KEY_STORE_COOKIES):
+                logging.info('Storing cookies for next run.')
+                cookies = self.web_crawler.get_cookies()
+                state = {'cookies': cookies}
+                self.write_state_file(state)
+        except Exception:
+            raise
+        finally:
+            self.web_crawler.stop()
 
-        self.web_crawler.stop()
         logging.info("Extraction finished")
 
     def _perform_crawler_actions(self, actions):
+        break_call = False
         for a in actions:
             # KBC bug, empty object as array
             action_params = a.get(KEY_ACTION_PARAMETERS, {})
@@ -108,8 +115,13 @@ class Component(ComponentBase):
                 # check if is break action
                 if isinstance(res, BreakBlockExecution):
                     break
+                # check if is exit action
+                if isinstance(action, ExitAction):
+                    break_call = True
+                    break
             except WebDriverException as e:
                 raise UserException(f"Action '{a[KEY_ACTION_NAME]}' failed with error: {e.msg}") from e
+        return break_call
 
     def _fill_in_user_parameters(self, crawler_steps, user_param):
         # convert to string minified
