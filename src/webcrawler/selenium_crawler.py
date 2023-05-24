@@ -7,7 +7,6 @@ import random
 import time
 from typing import List
 
-import pyscreenshot as ImageGrab
 import requests
 from keboola.component import ComponentBase, UserException
 from selenium import webdriver
@@ -379,10 +378,9 @@ class TakeScreenshot(CrawlerAction):
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
-        im = ImageGrab.grab()
         # save image file
         img_path = os.path.join(folder_path, self.name + '.png')
-        im.save(img_path)
+        driver.save_screenshot(img_path)
         if self.imgbb_token:
             self._store_in_imgbb(img_path, self.imgbb_token, str(runid_prefix) + '_' + self.name)
 
