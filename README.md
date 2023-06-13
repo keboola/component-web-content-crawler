@@ -58,6 +58,7 @@ web browser action a user would make, e.g. click an object, fill in a form, etc.
 - **resolution** - (OPT) resolution of the screen as a string, e.g. `1024x980`. The default value is `1920x1080`.
 - **maximize_window** - (OPT) Boolean value flagging whether to maximize the window to match the max resolution. Default
   is `false`.
+- **page_load_timeout** - (OPT) Numeric value (seconds) of how long the renderer should wait before timing out for page load or script execution (e.g. clicking a button "generate report"). Default value is 1000s
 - **user_parameters** – A list of user parameters that is are accessible from within actions. This is useful for storing
   for example user credentials that are to be filled in a login form. Appending `#` sign before the attribute name will
   hash the value and store it securely within the configuration (recommended for passwords). The value may be scalar or

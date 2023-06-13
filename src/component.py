@@ -60,7 +60,7 @@ class Component(ComponentBase):
                                           docker_mode=self.configuration.parameters.get(KEY_DOCKER_MODE, True),
                                           resolution=self.configuration.parameters.get(KEY_RESOLUTION),
                                           page_load_timeout=self.configuration.parameters.get(KEY_PAGELOAD_TIMEOUT,
-                                                                                              6000))
+                                                                                              1000))
 
         self.user_functions = Component.UserFunctions(self)
 

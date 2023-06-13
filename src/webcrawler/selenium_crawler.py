@@ -458,7 +458,7 @@ class GenericCrawler:
                  resolution='1920x1080',
                  proxy=None,
                  driver_type='Chrome',
-                 page_load_timeout=6000,
+                 page_load_timeout=300,
                  options=None):
 
         if resolution is None:
