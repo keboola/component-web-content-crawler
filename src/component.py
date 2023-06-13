@@ -23,6 +23,7 @@ KEY_MAX_WINDOW = 'maximize_window'
 KEY_RANDOM_WAIT = 'random_wait_range'
 KEY_USER_PARS = 'user_parameters'
 KEY_DRIVER_OPTIONS = 'driver_options'
+KEY_PAGELOAD_TIMEOUT = 'page_load_timeout'
 KEY_START_URL = 'start_url'
 KEY_STORE_COOKIES = 'store_cookies'
 KEY_DOCKER_MODE = 'docker_mode'
@@ -57,7 +58,9 @@ class Component(ComponentBase):
                                           runid=kbc_runid,
                                           random_wait_range=random_wait, options=options,
                                           docker_mode=self.configuration.parameters.get(KEY_DOCKER_MODE, True),
-                                          resolution=self.configuration.parameters.get(KEY_RESOLUTION))
+                                          resolution=self.configuration.parameters.get(KEY_RESOLUTION),
+                                          page_load_timeout=self.configuration.parameters.get(KEY_PAGELOAD_TIMEOUT,
+                                                                                              1000))
 
         self.user_functions = Component.UserFunctions(self)
 
