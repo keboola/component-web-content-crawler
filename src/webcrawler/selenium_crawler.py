@@ -458,6 +458,7 @@ class GenericCrawler:
                  resolution='1920x1080',
                  proxy=None,
                  driver_type='Chrome',
+                 page_load_timeout=6000,
                  options=None):
 
         if resolution is None:
@@ -474,6 +475,8 @@ class GenericCrawler:
         self._docker_mode = docker_mode
 
         self._driver = self._get_driver(driver_type, download_folder, options, docker_mode)
+        self._driver.set_page_load_timeout(page_load_timeout)
+        self._driver.set_script_timeout(page_load_timeout)
         self._main_window_handle = None
         while not self._main_window_handle:
             self._main_window_handle = self._driver.current_window_handle
