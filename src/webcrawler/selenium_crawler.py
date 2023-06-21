@@ -306,6 +306,23 @@ class DriverSwitchToAction(CrawlerAction):
         return res
 
 
+class SwitchToWindow(CrawlerAction):
+    def __init__(self, index: int):
+        self.window_index = index
+
+    def execute(self, driver: webdriver, **extra_args):
+        from selenium.common.exceptions import TimeoutException
+        res = None
+        try:
+            window_handle = driver.window_handles[self.window_index]
+            res = driver.switch_to.window(window_handle)
+        except TimeoutException:
+            pass
+        except KeyError:
+            raise ValueError(f"Window or Tab index {self.window_index} not found!")
+        return res
+
+
 class SwitchToPopup(CrawlerAction):
     def execute(self, driver: webdriver, **extra_args):
         main_handle = extra_args.pop('main_handle')
