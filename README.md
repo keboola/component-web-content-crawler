@@ -58,7 +58,8 @@ web browser action a user would make, e.g. click an object, fill in a form, etc.
 - **resolution** - (OPT) resolution of the screen as a string, e.g. `1024x980`. The default value is `1920x1080`.
 - **maximize_window** - (OPT) Boolean value flagging whether to maximize the window to match the max resolution. Default
   is `false`.
-- **page_load_timeout** - (OPT) Numeric value (seconds) of how long the renderer should wait before timing out for page load or script execution (e.g. clicking a button "generate report"). Default value is 1000s
+- **page_load_timeout** - (OPT) Numeric value (seconds) of how long the renderer should wait before timing out for page
+  load or script execution (e.g. clicking a button "generate report"). Default value is 1000s
 - **user_parameters** – A list of user parameters that is are accessible from within actions. This is useful for storing
   for example user credentials that are to be filled in a login form. Appending `#` sign before the attribute name will
   hash the value and store it securely within the configuration (recommended for passwords). The value may be scalar or
@@ -168,9 +169,10 @@ e.g. all JS code is executed.
 
 ### **MoveToElement**
 
-This action waits moves mouse to the specified element. 
+This action waits moves mouse to the specified element.
 
-Executes the ActionChain method [move_to_element](https://selenium-python.readthedocs.io/api.html?highlight=mouse#selenium.webdriver.common.action_chains.ActionChains.move_to_element)
+Executes the ActionChain
+method [move_to_element](https://selenium-python.readthedocs.io/api.html?highlight=mouse#selenium.webdriver.common.action_chains.ActionChains.move_to_element)
 
 **Parameters**
 
@@ -403,14 +405,28 @@ main window.
 
 ### **SwitchToMainWindow**
 
-This action navigates back to the main window. After the work is done action `SwitchToMainWindow` should be used to
-navigate back to the main window.
+This action navigates back to the main window.
 
 ```json
 {
   "description": "Switch focus back to main window",
   "action_name": "SwitchToMainWindow",
   "action_parameters": {}
+}
+```
+
+### **SwitchToWindow**
+
+This action navigates back to the window or tab at given index. The indexes are 0 based and incremental as the tabs or
+windows are created. e.g. if your action leads to a new tab the tab index will be `1`, the main window will be on `0`.
+
+```json
+{
+  "description": "Switch focus back to main window",
+  "action_name": "SwitchToWindow",
+  "action_parameters": {
+    "index": 0
+  }
 }
 ```
 
@@ -500,6 +516,7 @@ This action allows breaking the current `Step` execution and skipping to the nex
   "action_name": "BreakBlockExecution"
 }
 ```
+
 ### **ExitAction**
 
 This action allows you to stop the execution any time with specified status and message
@@ -522,7 +539,6 @@ CRITICAL = 50 ERROR = 40 WARNING = 30 INFO = 20 DEBUG = 10 NOTSET = 0
   }
 }
 ```
-
 
 ## User parameters
 
