@@ -552,7 +552,7 @@ class GenericCrawler:
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-features=VizDisplayCompositor')
             if docker_mode:
-                options.add_argument('--headless')
+                options.add_argument('--headless=new')
                 options.add_argument("--disable-dev-shm-usage")  # overcome limited resource problems
                 options.add_argument("--window-size=1920,1080")
 
