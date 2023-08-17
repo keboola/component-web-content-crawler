@@ -332,7 +332,8 @@ CRITICAL = 50 ERROR = 40 WARNING = 30 INFO = 20 DEBUG = 10 NOTSET = 0
 ### **DownloadPageContent**
 
 This action allows you to download whatever content is on the current or specified URL. The usecase may be downloading a
-JSON, CSV or any arbitrary file that is on specified URL. The response is streamed, so it supports large files.
+JSON, CSV or any arbitrary file that is on specified URL. When `use_stream_get` is set to `true`, the response is
+streamed, so it supports large files.
 
 All context of the browser such as cookies is maintained.
 
@@ -343,6 +344,12 @@ Typical usecase would be to login in previous steps and then call this method to
 - **result_file_name** - [REQUIRED] Result file name, e.g. 'report.json' it will be stored in 'out/tables/report.json'
   location
 - **url** - [OPT] Optional URL of the resource. If left empty the current url of the browser is downloaded.
+- **use_stream_get** - [OPT] Optional flag to control if the content is downloaded via simple GET request (does not
+  execute JavaScript) or via Browser
+    - Keep `true` when you need to download large binary file (e.g. CSV, JSON, etc.). It will download the content
+      efficiently via streaming request
+    - Use `false` when you need to download the HTML or page content and execute all JavaScript. This is equivalent of
+      clicking download source in a browser.
 
 ```json
 {
@@ -350,7 +357,8 @@ Typical usecase would be to login in previous steps and then call this method to
   "description": "Download report JSON",
   "action_parameters": {
     "url": "https://example.com/finance/report",
-    "result_file_name": "report.json"
+    "result_file_name": "report.json",
+    "use_stream_get": true
   }
 }
 ```

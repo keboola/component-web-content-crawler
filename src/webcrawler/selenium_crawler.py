@@ -176,15 +176,27 @@ class PrintHtmlPage(CrawlerAction):
 
 
 class DownloadPageContent(CrawlerAction):
-    def __init__(self, result_file_name, url=None):
+    def __init__(self, result_file_name, url=None, use_stream_get=True):
         self.result_file_name = result_file_name
         self.url = url
+        self.use_stream_get = use_stream_get
 
     def execute(self, driver: webdriver, **extra_args):
         download_folder = extra_args.pop('download_folder')
         res_file_path = os.path.join(download_folder, self.result_file_name)
 
         url = self.url or driver.current_url
+        if self.use_stream_get:
+            self._get_content_via_get(driver, url, res_file_path)
+        else:
+            self._get_content_via_browser(driver, url, res_file_path)
+
+    def _get_content_via_browser(self, driver: webdriver, url: str, res_file_path: str):
+        driver.get(url)
+        with open(res_file_path, 'w+') as out:
+            out.write(driver.page_source)
+
+    def _get_content_via_get(self, driver: webdriver, url: str, res_file_path: str):
         # get cookies
         cookies = driver.get_cookies()
         s = requests.Session()
