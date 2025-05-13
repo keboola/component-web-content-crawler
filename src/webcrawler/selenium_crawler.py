@@ -18,8 +18,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 
 class CrawlerAction:
-    KEY_ACTION_PARAMETERS = 'action_parameters'
-    KEY_ACTION_NAME = 'action_name'
+    KEY_ACTION_PARAMETERS = "action_parameters"
+    KEY_ACTION_NAME = "action_name"
 
     @abc.abstractmethod
     def execute(self, driver: webdriver, **extra_args):
@@ -43,7 +43,7 @@ class ClickElementToDownload(CrawlerAction):
         self.result_file_name = result_file_name
 
     def execute(self, driver: webdriver, **extra_args):
-        download_folder = extra_args.pop('download_folder')
+        download_folder = extra_args.pop("download_folder")
         exisitng_files = [f for f in os.listdir(download_folder) if os.path.isfile(os.path.join(download_folder, f))]
         driver.find_element(By.XPATH, self.xpath).click()
         time.sleep(self.delay)
@@ -55,20 +55,19 @@ class ClickElementToDownload(CrawlerAction):
         start_time = time.time()
         is_timedout = False
         while not new_files and not is_timedout:
-            existng_files = [f for f in os.listdir(download_folder)
-                             if os.path.isfile(os.path.join(download_folder, f))]
+            existng_files = [f for f in os.listdir(download_folder) if os.path.isfile(os.path.join(download_folder, f))]
             new_files = [f for f in existng_files if f not in original_files]
             elapsed_time = time.time() - start_time
             if elapsed_time > timeout:
                 is_timedout = True
 
         if is_timedout:
-            raise TimeoutError('File download timed out! Try to raise the timeout interval.')
+            raise TimeoutError("File download timed out! Try to raise the timeout interval.")
         return new_files
 
 
 class GenericShadowDomElementAction(CrawlerAction):
-    CSS_SHADOW_HOST = '#shadow-root'
+    CSS_SHADOW_HOST = "#shadow-root"
 
     def __init__(self, method_name, xpath: str, shadow_parent_element, **kwargs):
         self.xpath = xpath
@@ -77,7 +76,7 @@ class GenericShadowDomElementAction(CrawlerAction):
         self.shadow_parent_element = shadow_parent_element
 
     def execute(self, driver: webdriver, **extra_args):
-        positional_args = self.method_args.pop('positional_arguments', [])
+        positional_args = self.method_args.pop("positional_arguments", [])
         element = self.find_shadow_dom_element(self.xpath, driver, self.shadow_parent_element)
         method = getattr(element, self.method_name)
         return method(*positional_args, **self.method_args)
@@ -88,7 +87,7 @@ class GenericShadowDomElementAction(CrawlerAction):
         return element
 
     def get_ext_shadow_root(self, driver, element):
-        shadow_root = driver.execute_script('return arguments[0].shadowRoot', element)
+        shadow_root = driver.execute_script("return arguments[0].shadowRoot", element)
         return shadow_root
 
 
@@ -99,7 +98,7 @@ class GenericElementAction(CrawlerAction):
         self.method_args = kwargs
 
     def execute(self, driver: webdriver, **extra_args):
-        positional_args = self.method_args.pop('positional_arguments', [])
+        positional_args = self.method_args.pop("positional_arguments", [])
         element = driver.find_element(By.XPATH, self.xpath)
         method = getattr(element, self.method_name)
         return method(*positional_args, **self.method_args)
@@ -132,7 +131,7 @@ class TypeText(CrawlerAction):
         self.method_args = kwargs
 
     def execute(self, driver: webdriver, **extra_args):
-        positional_args = self.method_args.pop('positional_arguments', [])
+        positional_args = self.method_args.pop("positional_arguments", [])
         ActionChains(driver).send_keys(*positional_args)
 
 
@@ -182,7 +181,7 @@ class DownloadPageContent(CrawlerAction):
         self.use_stream_get = use_stream_get
 
     def execute(self, driver: webdriver, **extra_args):
-        download_folder = extra_args.pop('download_folder')
+        download_folder = extra_args.pop("download_folder")
         res_file_path = os.path.join(download_folder, self.result_file_name)
 
         url = self.url or driver.current_url
@@ -193,7 +192,7 @@ class DownloadPageContent(CrawlerAction):
 
     def _get_content_via_browser(self, driver: webdriver, url: str, res_file_path: str):
         driver.get(url)
-        with open(res_file_path, 'w+') as out:
+        with open(res_file_path, "w+") as out:
             out.write(driver.page_source)
 
     def _get_content_via_get(self, driver: webdriver, url: str, res_file_path: str):
@@ -201,10 +200,10 @@ class DownloadPageContent(CrawlerAction):
         cookies = driver.get_cookies()
         s = requests.Session()
         for cookie in cookies:
-            s.cookies.set(cookie['name'], cookie['value'])
+            s.cookies.set(cookie["name"], cookie["value"])
 
         res = s.get(url, stream=True)
-        with open(res_file_path, 'wb+') as out:
+        with open(res_file_path, "wb+") as out:
             for chunk in res.iter_content(chunk_size=8192):
                 out.write(chunk)
 
@@ -225,14 +224,14 @@ class SaveCookieFile(CrawlerAction):
         self.is_permanent = is_permanent
 
     def execute(self, driver: webdriver, **extra_args):
-        component: ComponentBase = extra_args.pop('component_interface')
-        out_file = component.create_out_file_definition('cookies.json', tags=self.tags, is_permanent=self.is_permanent)
+        component: ComponentBase = extra_args.pop("component_interface")
+        out_file = component.create_out_file_definition("cookies.json", tags=self.tags, is_permanent=self.is_permanent)
         res_file_path = out_file.full_path
 
         # get cookies
         cookies = driver.get_cookies()
 
-        with open(res_file_path, 'w+') as out:
+        with open(res_file_path, "w+") as out:
             json.dump({"cookies": cookies}, out)
         component.write_manifest(out_file)
 
@@ -255,32 +254,35 @@ class ConditionalAction(CrawlerAction):
         self.fail_action = fail_action
 
     def execute(self, driver: webdriver, **extra_args):
-        logging.info('Executing test action %s', type(self.test_action).__name__)
+        logging.info("Executing test action %s", type(self.test_action).__name__)
         try:
             self.test_action.execute(driver, **extra_args)
         except WebDriverException as e:
-            logging.debug('The testing action %s with params [%s]  failed with error: %s',
-                          type(self.test_action).__name__,
-                          self.test_action.__dict__, str(e))
+            logging.debug(
+                "The testing action %s with params [%s]  failed with error: %s",
+                type(self.test_action).__name__,
+                self.test_action.__dict__,
+                str(e),
+            )
 
-            logging.info('The testing action %s failed with error: %s',
-                         type(self.test_action).__name__, str(e))
+            logging.info("The testing action %s failed with error: %s", type(self.test_action).__name__, str(e))
             if self.fail_action:
-                logging.info('Executing action (%s) defined on failure.', type(self.fail_action).__name__)
+                logging.info("Executing action (%s) defined on failure.", type(self.fail_action).__name__)
                 return self.fail_action.execute(driver, **extra_args)
             else:
-                logging.info('Continue execution..')
+                logging.info("Continue execution..")
                 return
 
         # test passed
         if self.result_action:
-            logging.info('Test action passed, executing result_action %s', type(self.result_action).__name__)
+            logging.info("Test action passed, executing result_action %s", type(self.result_action).__name__)
             return self.result_action.execute(driver, **extra_args)
         else:
-            logging.info('No result action specified, continuing..')
+            logging.info("No result action specified, continuing..")
 
 
 # System actions
+
 
 class GenericDriverAction(CrawlerAction):
     def __init__(self, method_name, **kwargs):
@@ -288,12 +290,12 @@ class GenericDriverAction(CrawlerAction):
         self.method_args = kwargs
 
     def execute(self, driver: webdriver, **extra_args):
-        positional_args = self.method_args.pop('positional_arguments', [])
+        positional_args = self.method_args.pop("positional_arguments", [])
         method = getattr(driver, self.method_name)
         from selenium.common.exceptions import TimeoutException
+
         res = None
         try:
-
             res = method(*positional_args, **self.method_args)
         except TimeoutException:
             pass
@@ -306,12 +308,12 @@ class DriverSwitchToAction(CrawlerAction):
         self.method_args = kwargs
 
     def execute(self, driver: webdriver, **extra_args):
-        positional_args = self.method_args.pop('positional_arguments', [])
+        positional_args = self.method_args.pop("positional_arguments", [])
         method = getattr(driver.switch_to, self.method_name)
         from selenium.common.exceptions import TimeoutException
+
         res = None
         try:
-
             res = method(*positional_args, **self.method_args)
         except TimeoutException:
             pass
@@ -324,6 +326,7 @@ class SwitchToWindow(CrawlerAction):
 
     def execute(self, driver: webdriver, **extra_args):
         from selenium.common.exceptions import TimeoutException
+
         res = None
         try:
             window_handle = driver.window_handles[self.window_index]
@@ -337,7 +340,7 @@ class SwitchToWindow(CrawlerAction):
 
 class SwitchToPopup(CrawlerAction):
     def execute(self, driver: webdriver, **extra_args):
-        main_handle = extra_args.pop('main_handle')
+        main_handle = extra_args.pop("main_handle")
         new_window_handle = None
         while not new_window_handle:
             for handle in driver.window_handles:
@@ -349,7 +352,7 @@ class SwitchToPopup(CrawlerAction):
 
 class SwitchToMainWindow(CrawlerAction):
     def execute(self, driver: webdriver, **extra_args):
-        main_handle = extra_args.pop('main_handle')
+        main_handle = extra_args.pop("main_handle")
         driver.switch_to.window(main_handle)
 
 
@@ -375,10 +378,6 @@ class BasicLogin(CrawlerAction):
     """
 
     def __init__(self, user, password):
-        """
-
-
-        """
         self.user = user
         self.password = password
 
@@ -392,7 +391,7 @@ class TakeScreenshot(CrawlerAction):
     Pauses execution for specified amount of time (s).
     """
 
-    def __init__(self, name, folder='screens', imgbb_token=None):
+    def __init__(self, name, folder="screens", imgbb_token=None):
         """
 
         :param seconds: Seconds to wait
@@ -402,52 +401,45 @@ class TakeScreenshot(CrawlerAction):
         self.imgbb_token = imgbb_token
 
     def execute(self, driver: webdriver, **extra_args):
-        folder_path = os.path.join(extra_args.pop('data_folder'), self.folder)
-        runid_prefix = extra_args.get('runid', '')
+        folder_path = os.path.join(extra_args.pop("data_folder"), self.folder)
+        runid_prefix = extra_args.get("runid", "")
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
         # save image file
-        img_path = os.path.join(folder_path, self.name + '.png')
+        img_path = os.path.join(folder_path, self.name + ".png")
         driver.save_screenshot(img_path)
         if self.imgbb_token:
-            self._store_in_imgbb(img_path, self.imgbb_token, str(runid_prefix) + '_' + self.name)
+            self._store_in_imgbb(img_path, self.imgbb_token, str(runid_prefix) + "_" + self.name)
 
     def _store_in_imgbb(self, img_path, token, name):
         with open(img_path, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read())
-        values = {
-            "image": encoded_string
-        }
+        values = {"image": encoded_string}
 
-        params = {
-            'key': token,
-            "name": name
-        }
-        response = requests.post('https://api.imgbb.com/1/upload', data=values,
-                                 params=params)
+        params = {"key": token, "name": name}
+        response = requests.post("https://api.imgbb.com/1/upload", data=values, params=params)
 
         if response.status_code > 299:
-            raise RuntimeError(F'Failed to store image {name} in the ImgBB repository')
+            raise RuntimeError(f"Failed to store image {name} in the ImgBB repository")
 
 
 class CrawlerActionBuilder:
-
     @staticmethod
     def build(action_name, **parameters):
         # TODO: validate parameters based on type
         supported_actions = CrawlerActionBuilder.get_supported_actions()
         if action_name not in list(supported_actions.keys()):
-            raise ValueError('{} is not supported action, '
-                             'suported values are: [{}]'.format(action_name,
-                                                                CrawlerAction.__subclasses__()))
+            raise ValueError(
+                f"{action_name} is not supported action, suported values are: [{CrawlerAction.__subclasses__()}]"
+            )
 
         # special case of conditional action
-        if action_name == 'ConditionalAction':
+        if action_name == "ConditionalAction":
             cond_action = supported_actions[action_name](**parameters)
             return CrawlerActionBuilder._build_conditional_action(cond_action)
-        elif action_name == 'TakeScreenshot':
-            parameters['imgbb_token'] = parameters.pop('#imgbb_token', None)
+        elif action_name == "TakeScreenshot":
+            parameters["imgbb_token"] = parameters.pop("#imgbb_token", None)
             return supported_actions[action_name](**parameters)
         else:
             return supported_actions[action_name](**parameters)
@@ -463,37 +455,45 @@ class CrawlerActionBuilder:
     def _build_conditional_action(cond_action: ConditionalAction):
         test_action_def = cond_action.test_action
         action_pars = test_action_def.get(CrawlerAction.KEY_ACTION_PARAMETERS, {})
-        cond_action.test_action = CrawlerActionBuilder.build(test_action_def[CrawlerAction.KEY_ACTION_NAME],
-                                                             **action_pars)
+        cond_action.test_action = CrawlerActionBuilder.build(
+            test_action_def[CrawlerAction.KEY_ACTION_NAME], **action_pars
+        )
 
         if cond_action.result_action:
             action_def = cond_action.result_action
             action_pars = action_def.get(CrawlerAction.KEY_ACTION_PARAMETERS, {})
-            cond_action.result_action = CrawlerActionBuilder.build(action_def[CrawlerAction.KEY_ACTION_NAME],
-                                                                   **action_pars)
+            cond_action.result_action = CrawlerActionBuilder.build(
+                action_def[CrawlerAction.KEY_ACTION_NAME], **action_pars
+            )
 
         if cond_action.fail_action:
             action_def = cond_action.fail_action
             action_pars = action_def.get(CrawlerAction.KEY_ACTION_PARAMETERS, {})
-            cond_action.fail_action = CrawlerActionBuilder.build(action_def[CrawlerAction.KEY_ACTION_NAME],
-                                                                 **action_pars)
+            cond_action.fail_action = CrawlerActionBuilder.build(
+                action_def[CrawlerAction.KEY_ACTION_NAME], **action_pars
+            )
         return cond_action
 
 
 class GenericCrawler:
-
-    def __init__(self, start_url, download_folder, component_interface: ComponentBase, runid='', docker_mode=True,
-                 random_wait_range=None,
-                 resolution='1920x1080',
-                 proxy=None,
-                 driver_type='Chrome',
-                 page_load_timeout=300,
-                 options=None):
-
+    def __init__(
+        self,
+        start_url,
+        download_folder,
+        component_interface: ComponentBase,
+        runid="",
+        docker_mode=True,
+        random_wait_range=None,
+        resolution="1920x1080",
+        proxy=None,
+        driver_type="Chrome",
+        page_load_timeout=300,
+        options=None,
+    ):
         if resolution is None:
-            resolution = '1920x1080'
+            resolution = "1920x1080"
 
-        res_sizes = resolution.split('x')
+        res_sizes = resolution.split("x")
         if len(res_sizes) != 2:
             raise ValueError("Resolution is in invalid format, you must provide it as WIDTHxEIGHT. e.g. 1024x980")
         self.start_url = start_url
@@ -531,28 +531,33 @@ class GenericCrawler:
 
     def perform_action(self, action: CrawlerAction):
         data_folder = self.component_interface.data_folder_path
-        res = action.execute(self._driver, download_folder=self.download_folder,
-                             data_folder=data_folder,
-                             component_interface=self.component_interface,
-                             runid=self.runid, main_handle=self._main_window_handle)
+        res = action.execute(
+            self._driver,
+            download_folder=self.download_folder,
+            data_folder=data_folder,
+            component_interface=self.component_interface,
+            runid=self.runid,
+            main_handle=self._main_window_handle,
+        )
 
         self._wait_random(self.random_wait_range)
         return res
 
     def _get_driver(self, driver_type, download_folder, options, docker_mode):
-        if driver_type == 'Chrome':
+        if driver_type == "Chrome":
             options = webdriver.ChromeOptions()
-            prefs = {'download.default_directory': download_folder,
-                     "download.prompt_for_download": False,
-                     "safebrowsing.enabled": False
-                     }
-            options.add_experimental_option('prefs', prefs)
+            prefs = {
+                "download.default_directory": download_folder,
+                "download.prompt_for_download": False,
+                "safebrowsing.enabled": False,
+            }
+            options.add_experimental_option("prefs", prefs)
             # setting for running in docker
             # TODO: remove hardcoding
-            options.add_argument('--no-sandbox')
-            options.add_argument('--disable-features=VizDisplayCompositor')
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-features=VizDisplayCompositor")
             if docker_mode:
-                options.add_argument('--headless')
+                options.add_argument("--headless")
                 options.add_argument("--disable-dev-shm-usage")  # overcome limited resource problems
                 options.add_argument("--window-size=1920,1080")
 
@@ -564,7 +569,7 @@ class GenericCrawler:
             driver = webdriver.Chrome(options=options)
             # self.enable_download_in_headless_chrome()
         else:
-            raise ValueError('{} web driver is not supported!'.format(driver_type))
+            raise ValueError(f"{driver_type} web driver is not supported!")
         return driver
 
     def _wait_random(self, _range):
