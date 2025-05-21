@@ -8,7 +8,7 @@ import time
 from typing import List
 
 import requests
-from keboola.component import ComponentBase, UserException
+from keboola.component import ComponentBase
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import ActionChains
@@ -121,9 +121,10 @@ class ExitAction(CrawlerAction):
 
     def execute(self, driver: webdriver, **extra_args):
         if self.status >= 1:
-            raise UserException(f"Execution stopped with message: {self.message}")
+            logging.error(f"Execution stopped with message: {self.message}")
         else:
             logging.info(f"Execution stopped with message: {self.message}")
+        return self
 
 
 class TypeText(CrawlerAction):

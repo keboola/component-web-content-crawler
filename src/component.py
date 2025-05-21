@@ -13,9 +13,13 @@ from keboola.component import ComponentBase, UserException
 from nested_lookup import nested_lookup
 from selenium.common.exceptions import WebDriverException
 
-from webcrawler.selenium_crawler import BreakBlockExecution, ExitAction
-from webcrawler.selenium_crawler import CrawlerActionBuilder
-from webcrawler.selenium_crawler import GenericCrawler
+from webcrawler.selenium_crawler import (
+    BreakBlockExecution,
+    ConditionalAction,
+    CrawlerActionBuilder,
+    ExitAction,
+    GenericCrawler,
+)
 
 # configuration variables
 KEY_RESOLUTION = "resolution"
@@ -117,11 +121,12 @@ class Component(ComponentBase):
             try:
                 res = self.web_crawler.perform_action(action)
 
-                # check if is break action
                 if isinstance(res, BreakBlockExecution):
                     break
-                # check if is exit action
-                if isinstance(action, ExitAction):
+
+                is_exit_action = isinstance(action, ExitAction)
+                is_cond_exit_action = isinstance(action, ConditionalAction) and isinstance(res, ExitAction)
+                if is_exit_action or is_cond_exit_action:
                     break_call = True
                     break
             except WebDriverException as e:
