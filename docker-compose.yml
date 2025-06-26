@@ -3,29 +3,29 @@ services:
   dev:
     build: .
     volumes:
-        - ./:/code
-        - ./data:/data
+      - ./src:/code/src
+      - ./data:/data
     environment:
-      - KBC_DATADIR=./data
+      - KBC_DATADIR=/data
 
     mem_limit: 256m
   test:
     build: .
     volumes:
-      - ./:/code
+      - ./src:/code/src
       - ./data:/data
     environment:
-      - KBC_DATADIR=./data
+      - KBC_DATADIR=/data
     command:
       - /bin/sh
       - build_n_test.sh
   bash:
     build: .
     volumes:
-      - ./:/code
+      - ./src:/code/src
       - ./data:/data
     environment:
-      - KBC_DATADIR=./data
+      - KBC_DATADIR=/data
 
     command:
       - /bin/sh
