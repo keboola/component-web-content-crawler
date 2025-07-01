@@ -1,19 +1,20 @@
-FROM selenium/standalone-chrome:latest
+FROM python:3.13-slim
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# chown selenium base image's cache & venv directory so that uv can install packages there
-USER root
-RUN chown 1000:1000 /home/seluser/.cache
-RUN chown 1000:1000 /opt/venv
+RUN apt -y update
+RUN apt install -y chromium chromium-driver
 
-RUN mkdir /userdata
-RUN chown 1000:1000 /userdata
+# Create user to correctly set the $HOME env variable and create the home folder
+ARG USERNAME=keboola
+RUN adduser --uid 1000 --disabled-password ${USERNAME}
+
+USER 1000:1000
 
 WORKDIR /code
 COPY pyproject.toml .
 COPY uv.lock .
 
-RUN uv sync --all-groups --frozen --active
+RUN uv sync --all-groups --frozen
 
 COPY scripts/ scripts
 COPY src/ src
@@ -21,4 +22,4 @@ COPY tests/ tests
 COPY deploy.sh .
 COPY flake8.cfg .
 
-CMD ["python3", "-u", "src/component.py"]
+CMD ["uv", "run", "python3", "-u", "src/component.py"]
