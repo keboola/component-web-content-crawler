@@ -1,12 +1,12 @@
 [project]
 name = "component-web-content-crawler"
 version = "0.1.0"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 dependencies = [
-    "freezegun==1.2.1",
+    "freezegun>=1.5.0",
     "keboola-component>=1.6.10",
-    "keboola-utils==1.1.0",
-    "mock==4.0.3",
+    "keboola-utils>=1.1.0",
+    "mock>=4.0.3",
     "nested-lookup>=0.2.25",
     "pillow>=11.2.1",
     "requests>=2.32.4",
