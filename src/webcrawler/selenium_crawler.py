@@ -481,31 +481,21 @@ class GenericCrawler:
     def __init__(
         self,
         start_url,
+        resolution,
         download_folder,
         component_interface: ComponentBase,
         runid="",
         docker_mode=True,
         random_wait_range=None,
-        resolution="1920x1080",
-        proxy=None,
-        driver_type="Chrome",
         page_load_timeout=300,
-        options=None,
     ):
-        if resolution is None:
-            resolution = "1920x1080"
-
-        res_sizes = resolution.split("x")
-        if len(res_sizes) != 2:
-            raise ValueError("Resolution is in invalid format, you must provide it as WIDTHxEIGHT. e.g. 1024x980")
         self.start_url = start_url
         self.random_wait_range = random_wait_range
         self.download_folder = download_folder
         self.component_interface = component_interface
         self.runid = runid
-        self._docker_mode = docker_mode
 
-        self._driver = self._get_driver(driver_type, download_folder, options, docker_mode)
+        self._driver = self._get_driver(resolution, download_folder, docker_mode)
         self._driver.set_page_load_timeout(page_load_timeout)
         self._driver.set_script_timeout(page_load_timeout)
         self._main_window_handle = None
@@ -528,9 +518,6 @@ class GenericCrawler:
     def stop(self):
         self._driver.quit()
 
-    def maximize_window(self):
-        self._driver.maximize_window()
-
     def perform_action(self, action: CrawlerAction):
         data_folder = self.component_interface.data_folder_path
         res = action.execute(
@@ -545,38 +532,54 @@ class GenericCrawler:
         self._wait_random(self.random_wait_range)
         return res
 
-    def _get_driver(self, driver_type, download_folder, options, docker_mode):
-        if driver_type == "Chrome":
-            options = webdriver.ChromeOptions()
-            prefs = {
-                "download.default_directory": download_folder,
-                "download.prompt_for_download": False,
-                "safebrowsing.enabled": False,
-            }
-            options.add_experimental_option("prefs", prefs)
-            options.add_argument("--no-sandbox")
+    def _set_window_size(self, driver: webdriver.Chrome, resolution: str):
+        try:
+            desired_width, desired_height = [int(n) for n in resolution.split("x")]
+        except Exception:
+            raise ValueError("Invalid resolution value: %s. Please provide WIDTHxHEIGHT (e.g. 2560x1440)", resolution)
 
-            options.add_argument('--disable-features=VizDisplayCompositor')
+        driver.set_window_size(desired_width, desired_height)
+        inner_width, inner_height = driver.execute_script("return [window.innerWidth, window.innerHeight];")
 
-            if docker_mode:
-                options.add_argument("--disable-gpu")  # applicable to windows os only
-                options.add_argument("--disable-dev-shm-usage")  # overcome limited resource problems
-                options.add_argument("--headless")
-                options.add_argument("--window-size=1920,1080")
+        result_width = desired_width + desired_width - inner_width
+        result_height = desired_height + desired_height - inner_height
 
-            # options.add_argument("disable-infobars")
-            # options.add_argument("--disable-extensions")
-            # options.add_argument("--disable-dev-shm-usage")  # overcome limited resource problems
-            # start maximized does not work when in docker mode
-            driver = webdriver.Chrome(options=options)
-            # self.enable_download_in_headless_chrome()
-        else:
-            raise ValueError(f"{driver_type} web driver is not supported!")
+        logging.info(
+            "Chrome window set to %ix%i, actual size is %i×%i, readjusting to %i×%i",
+            desired_width,
+            desired_height,
+            inner_width,
+            inner_height,
+            result_width,
+            result_height,
+        )
+        driver.set_window_size(result_width, result_height)
+
+    def _get_driver(self, resolution: str, download_folder: str, docker_mode: bool) -> webdriver.Chrome:
+        options = webdriver.ChromeOptions()
+        prefs = {
+            "download.default_directory": download_folder,
+            "download.prompt_for_download": False,
+            "safebrowsing.enabled": False,
+        }
+        options.add_experimental_option("prefs", prefs)
+        options.add_argument("--no-sandbox")
+
+        options.add_argument("--disable-features=VizDisplayCompositor")
+
+        if docker_mode:
+            options.add_argument("--disable-gpu")  # applicable to windows os only
+            options.add_argument("--disable-dev-shm-usage")  # overcome limited resource problems
+            options.add_argument("--headless")
+
+        driver = webdriver.Chrome(options=options)
+        self._set_window_size(driver, resolution)
         return driver
 
-    def _wait_random(self, _range):
-        if _range:
-            wait_int = random.randint(_range[0], _range[1])
-            time.sleep(wait_int)
-        else:
+    def _wait_random(self, wait_range: tuple[int, int] | None):
+        if wait_range is None:
             return
+
+        wait_int = random.randint(wait_range[0], wait_range[1])
+        logging.info("Waiting for %i seconds (picked randomly)", wait_int)
+        time.sleep(wait_int)

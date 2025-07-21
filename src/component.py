@@ -1,8 +1,3 @@
-"""
-Template Component main class.
-
-"""
-
 import argparse
 import json
 import logging
@@ -23,10 +18,8 @@ from webcrawler.selenium_crawler import (
 
 # configuration variables
 KEY_RESOLUTION = "resolution"
-KEY_MAX_WINDOW = "maximize_window"
 KEY_RANDOM_WAIT = "random_wait_range"
-KEY_USER_PARS = "user_parameters"
-KEY_DRIVER_OPTIONS = "driver_options"
+KEY_USER_PARAMS = "user_parameters"
 KEY_PAGELOAD_TIMEOUT = "page_load_timeout"
 KEY_START_URL = "start_url"
 KEY_STORE_COOKIES = "store_cookies"
@@ -38,7 +31,9 @@ KEY_ACTIONS = "actions"
 KEY_ACTION_PARAMETERS = "action_parameters"
 KEY_ACTION_NAME = "action_name"
 
-MANDATORY_PARS = [KEY_STEPS, KEY_START_URL]
+MANDATORY_PARAMS = [KEY_STEPS, KEY_START_URL]
+
+DEFAULT_RESOLUTION = "1920x1080"
 
 
 class Component(ComponentBase):
@@ -46,26 +41,23 @@ class Component(ComponentBase):
         ComponentBase.__init__(self, data_path_override=data_path)
 
         try:
-            self.validate_configuration_parameters(MANDATORY_PARS)
+            self.validate_configuration_parameters(MANDATORY_PARAMS)
         except ValueError as e:
             logging.error(e)
             exit(1)
 
         logging.info("Setting up crawler..")
         # intialize instance parameters
-        random_wait = self.configuration.parameters.get(KEY_RANDOM_WAIT, None)
-        options = self.configuration.parameters.get(KEY_DRIVER_OPTIONS)
         kbc_runid = os.environ.get("KBC_RUNID")
         self.web_crawler = GenericCrawler(
             self.configuration.parameters[KEY_START_URL],
-            self.tables_out_path,
+            resolution=self.configuration.parameters.get(KEY_RESOLUTION) or DEFAULT_RESOLUTION,
+            download_folder=self.tables_out_path,
             component_interface=self,
             runid=kbc_runid,
-            random_wait_range=random_wait,
-            options=options,
-            docker_mode=self.configuration.parameters.get(KEY_DOCKER_MODE, True),
-            resolution=self.configuration.parameters.get(KEY_RESOLUTION),
-            page_load_timeout=self.configuration.parameters.get(KEY_PAGELOAD_TIMEOUT, 1000),
+            docker_mode=self.configuration.parameters.get(KEY_DOCKER_MODE) or True,
+            random_wait_range=self.configuration.parameters.get(KEY_RANDOM_WAIT),
+            page_load_timeout=self.configuration.parameters.get(KEY_PAGELOAD_TIMEOUT) or 1000,
         )
 
         self.user_functions = Component.UserFunctions(self)
@@ -76,14 +68,11 @@ class Component(ComponentBase):
         """
         crawler_steps = self.configuration.parameters[KEY_STEPS]
 
-        crawler_steps = self._fill_in_user_parameters(crawler_steps, self.configuration.parameters.get(KEY_USER_PARS))
+        crawler_steps = self._fill_in_user_parameters(crawler_steps, self.configuration.parameters.get(KEY_USER_PARAMS))
 
         logging.info("Entering first step URL %s", self.web_crawler.start_url)
         self.web_crawler.start()
         try:
-            if self.configuration.parameters.get(KEY_MAX_WINDOW):
-                self.web_crawler.maximize_window()
-
             # set cookies, needs to be done after the domain load
             if self.configuration.parameters.get(KEY_STORE_COOKIES):
                 logging.info("Loading cookies from last run.")
