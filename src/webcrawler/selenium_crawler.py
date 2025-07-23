@@ -536,7 +536,7 @@ class GenericCrawler:
         try:
             desired_width, desired_height = [int(n) for n in resolution.split("x")]
         except Exception:
-            raise ValueError("Invalid resolution value: %s. Please provide WIDTHxHEIGHT (e.g. 2560x1440)", resolution)
+            raise ValueError(f"Invalid resolution value: {resolution}. Please provide WIDTHxHEIGHT (e.g. 2560x1440)")
 
         driver.set_window_size(desired_width, desired_height)
         inner_width, inner_height = driver.execute_script("return [window.innerWidth, window.innerHeight];")
