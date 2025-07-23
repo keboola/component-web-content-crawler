@@ -433,7 +433,7 @@ class CrawlerActionBuilder:
         supported_actions = CrawlerActionBuilder.get_supported_actions()
         if action_name not in list(supported_actions.keys()):
             raise ValueError(
-                f"{action_name} is not supported action, suported values are: [{CrawlerAction.__subclasses__()}]"
+                f"{action_name} is not supported action, supported values are: [{CrawlerAction.__subclasses__()}]"
             )
 
         # special case of conditional action
