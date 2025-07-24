@@ -1,17 +1,49 @@
+- [KBC Selenium Web Robot](#kbc-selenium-web-robot)
+- [Configuration](#configuration)
+  - [Configuration Structure](#configuration-structure)
+  - ["Step" objects](#step-objects)
+  - [Actions](#actions)
+  - [**Actions on element**](#actions-on-element)
+    - [**ClickElementToDownload**w](#clickelementtodownloadw)
+    - [**WaitForElement**](#waitforelement)
+    - [**MoveToElement**](#movetoelement)
+    - [**GenericElementAction**](#genericelementaction)
+  - [**System actions**](#system-actions)
+    - [**GenericDriverAction**](#genericdriveraction)
+    - [**DriverSwitchToAction**](#driverswitchtoaction)
+    - [**PrintHtmlPage**](#printhtmlpage)
+    - [**DownloadPageContent**](#downloadpagecontent)
+    - [**SaveCookieFile**](#savecookiefile)
+    - [**SwitchToPopup**](#switchtopopup)
+    - [**SwitchToMainWindow**](#switchtomainwindow)
+    - [**SwitchToWindow**](#switchtowindow)
+    - [**TakeScreenshot**](#takescreenshot)
+    - [**Wait**](#wait)
+    - [**ConditionalAction**](#conditionalaction)
+    - [**BreakBlockExecution**](#breakblockexecution)
+    - [**ExitAction**](#exitaction)
+  - [User parameters](#user-parameters)
+  - [Dynamic Functions](#dynamic-functions)
+    - [string\_to\_date](#string_to_date)
+    - [concat](#concat)
+  - [Sample configuration](#sample-configuration)
+- [Configuration creation](#configuration-creation)
+  - [Development](#development)
+- [Integration](#integration)
+
+
 # KBC Selenium Web Robot
 
 A Keboola Connection component allowing to perform variety of web browser operations on any web-site and download web
 content into the Storage. It is useful for instance for navigating through a legacy system web interface and downloading
 a generated report that would be impossible to export in an automated manner otherwise.
 
-The robot emulates in docker mode emulates display with resolution set by default to `1920X1080`, this can be overriden
-by configuration parameter. It runs `Chrome` browser version `73.0.3683.20` operating with window size of `1024x980`, it
-is possible to maximize the window on the startup to match the screen. The browser is run with configuration
-parameter `--no-sandbox` and driver option `"safebrowsing.enabled": False`.
+The component opens a browser window whose viewport is set to a user defined resolution. The default viewport size is
+1920 × 1080 pixels. It runs the latest stable version of the Chromium web browser. The browser is run with the following
+options:
+- `--no-sandbox`
+- `"safebrowsing.enabled": False`
 
-**Table of contents:**
-
-[TOC]
 
 # Configuration
 
@@ -55,9 +87,7 @@ web browser action a user would make, e.g. click an object, fill in a form, etc.
 - **random_wait_range** - A time range in seconds defining how long should the crawler wait between each action. The
   interval is defined by boundaries in seconds, e.g. [1, 5] means that the crawler will wait between each action
   anywhere between 1s and 5s, the actual wait time is chosen randomly within these boundaries.
-- **resolution** - (OPT) resolution of the screen as a string, e.g. `1024x980`. The default value is `1920x1080`.
-- **maximize_window** - (OPT) Boolean value flagging whether to maximize the window to match the max resolution. Default
-  is `false`.
+- **resolution** - (OPT) resolution of the screen as a string, e.g. `2560x1440`. The default value is `1920x1080`.
 - **page_load_timeout** - (OPT) Numeric value (seconds) of how long the renderer should wait before timing out for page
   load or script execution (e.g. clicking a button "generate report"). Default value is 1000s
 - **user_parameters** – A list of user parameters that is are accessible from within actions. This is useful for storing
@@ -728,7 +758,6 @@ The above value is then available in step contexts as:
 ```json
 {
   "user_parameters": {},
-  "driver": "Chrome",
   "start_url": "https://support.spatialkey.com/spatialkey-sample-csv-data",
   "random_wait_range": [
     1,
