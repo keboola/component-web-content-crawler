@@ -479,15 +479,15 @@ class CrawlerActionBuilder:
 
 class GenericCrawler:
     def __init__(
-        self,
-        start_url,
-        resolution,
-        download_folder,
-        component_interface: ComponentBase,
-        runid="",
-        docker_mode=True,
-        random_wait_range=None,
-        page_load_timeout=300,
+            self,
+            start_url,
+            resolution,
+            download_folder,
+            component_interface: ComponentBase,
+            runid="",
+            docker_mode=True,
+            random_wait_range=None,
+            page_load_timeout=300,
     ):
         self.start_url = start_url
         self.random_wait_range = random_wait_range
@@ -524,6 +524,9 @@ class GenericCrawler:
             return
         for cookie in cookies:
             self._driver.add_cookie(cookie)
+
+    def refresh_page(self):
+        self._driver.refresh()
 
     def stop(self):
         self._driver.quit()

@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import os
+import time
 
 import keboola.utils as kutils
 from keboola.component import ComponentBase, UserException
@@ -55,7 +56,7 @@ class Component(ComponentBase):
             download_folder=self.tables_out_path,
             component_interface=self,
             runid=kbc_runid,
-            docker_mode=self.configuration.parameters.get(KEY_DOCKER_MODE) or True,
+            docker_mode=self.configuration.parameters.get(KEY_DOCKER_MODE, True),
             random_wait_range=self.configuration.parameters.get(KEY_RANDOM_WAIT),
             page_load_timeout=self.configuration.parameters.get(KEY_PAGELOAD_TIMEOUT) or 1000,
         )
@@ -78,6 +79,9 @@ class Component(ComponentBase):
                 logging.info("Loading cookies from last run.")
                 last_state = self.get_state_file()
                 self.web_crawler.load_cookies(last_state.get("cookies"))
+                # refresh the page to apply cookies (cookies need to be added after domain is loaded)
+                self.web_crawler.refresh_page()
+                time.sleep(2)
 
             for st in crawler_steps:
                 logging.info(st.get(KEY_DESCRIPTION, ""))
