@@ -494,6 +494,7 @@ class GenericCrawler:
         self.download_folder = download_folder
         self.component_interface = component_interface
         self.runid = runid
+        self.page_load_timeout = page_load_timeout
 
         self._driver = self._get_driver(resolution, download_folder, docker_mode)
         # Align the Selenium client's own HTTP command read-timeout with the configured
@@ -515,6 +516,11 @@ class GenericCrawler:
     def start(self):
         # TODO: validate URL
         self._driver.get(self.start_url)
+        # Wait for page to be ready before returning (needed for cookie loading)
+        from selenium.webdriver.support.ui import WebDriverWait
+        WebDriverWait(self._driver, self.page_load_timeout).until(
+            lambda driver: driver.execute_script("return document.readyState") == "complete"
+        )
 
     def get_cookies(self):
         return self._driver.get_cookies()
@@ -527,6 +533,10 @@ class GenericCrawler:
 
     def refresh_page(self):
         self._driver.refresh()
+        # Wait for page to be ready after refresh
+        WebDriverWait(self._driver, self.page_load_timeout).until(
+            lambda driver: driver.execute_script("return document.readyState") == "complete"
+        )
 
     def stop(self):
         self._driver.quit()
