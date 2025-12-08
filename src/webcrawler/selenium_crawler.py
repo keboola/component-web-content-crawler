@@ -518,8 +518,30 @@ class GenericCrawler:
     def load_cookies(self, cookies):
         if not cookies:
             return
+
+        # Log current page state before adding cookies
+        current_url = self._driver.current_url
+        ready_state = self._driver.execute_script("return document.readyState")
+        logging.info(f"Loading cookies - Current URL: {current_url}, readyState: {ready_state}")
+
+        success_count = 0
+        fail_count = 0
+
         for cookie in cookies:
-            self._driver.add_cookie(cookie)
+            try:
+                cookie_name = cookie.get('name', 'unknown')
+                cookie_domain = cookie.get('domain', 'unknown')
+                logging.debug(f"Attempting to add cookie '{cookie_name}' with domain '{cookie_domain}'")
+                self._driver.add_cookie(cookie)
+                success_count += 1
+            except Exception as e:
+                # Skip cookies that can't be added (e.g., invalid domain format)
+                fail_count += 1
+                logging.warning(
+                    f"Failed to add cookie '{cookie.get('name', 'unknown')}' "
+                    f"with domain '{cookie.get('domain', 'unknown')}': {str(e)}")
+
+        logging.info(f"Cookie loading complete: {success_count} succeeded, {fail_count} failed")
 
     def refresh_page(self):
         self._driver.refresh()

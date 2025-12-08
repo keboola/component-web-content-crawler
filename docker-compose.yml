@@ -7,8 +7,8 @@ services:
       - ./data:/data
     environment:
       - KBC_DATADIR=/data
-
-    mem_limit: 256m
+    shm_size: '2gb'
+    mem_limit: 2g
   test:
     build: .
     volumes:
