@@ -2,7 +2,6 @@ import argparse
 import json
 import logging
 import os
-import time
 
 import keboola.utils as kutils
 from keboola.component import ComponentBase, UserException
@@ -76,14 +75,11 @@ class Component(ComponentBase):
         try:
             # set cookies, needs to be done after the domain load
             if self.configuration.parameters.get(KEY_STORE_COOKIES):
-                logging.info("Loading cookies from last run.")
-                # wait for page load
-                time.sleep(5)
+                logging.info("Loading cookies from last run and refreshing the page.")
                 last_state = self.get_state_file()
                 self.web_crawler.load_cookies(last_state.get("cookies"))
                 # refresh the page to apply cookies (cookies need to be added after domain is loaded)
                 self.web_crawler.refresh_page()
-                time.sleep(2)
 
             for st in crawler_steps:
                 logging.info(st.get(KEY_DESCRIPTION, ""))
