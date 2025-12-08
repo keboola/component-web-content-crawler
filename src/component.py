@@ -77,6 +77,8 @@ class Component(ComponentBase):
             # set cookies, needs to be done after the domain load
             if self.configuration.parameters.get(KEY_STORE_COOKIES):
                 logging.info("Loading cookies from last run.")
+                # wait for page load
+                time.sleep(5)
                 last_state = self.get_state_file()
                 self.web_crawler.load_cookies(last_state.get("cookies"))
                 # refresh the page to apply cookies (cookies need to be added after domain is loaded)
