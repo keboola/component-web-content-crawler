@@ -546,7 +546,7 @@ execution step, when some defined condition fails.
 
 ### **BreakBlockExecution**
 
-This action allows breaking the current `Step` execution and skipping to the next step.
+This action allows breaking the current `Step` execution and **skipping to the next step**.
 
 ```json
 {
