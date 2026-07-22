@@ -496,18 +496,18 @@ class GenericCrawler:
         self.runid = runid
 
         self._driver = self._get_driver(resolution, download_folder, docker_mode)
+        # Align the Selenium client's own HTTP command read-timeout with the configured
+        # page-load budget. That client timeout otherwise defaults to the runtime's
+        # ambient socket.getdefaulttimeout() (e.g. 120s in the Keboola job runtime),
+        # which can be far shorter than page_load_timeout. A slow-but-valid command that
+        # runs longer than the ambient timeout would raise requests.exceptions.ReadTimeout
+        # (not a WebDriverException), bypassing the WebDriverException handling and
+        # crashing as an unhandled internal error. Setting it here, right after driver
+        # creation, ensures it applies to every subsequent driver command issued in this
+        # constructor and beyond.
+        self._driver.command_executor.client_config.timeout = page_load_timeout
         self._driver.set_page_load_timeout(page_load_timeout)
         self._driver.set_script_timeout(page_load_timeout)
-        # The Selenium client's own HTTP command read-timeout defaults to the ambient
-        # socket.getdefaulttimeout() of the runtime, which can be far shorter than the
-        # browser-side page-load / script budget set above. When a slow-but-valid page
-        # load runs longer than that ambient timeout, the client raises
-        # requests.exceptions.ReadTimeout (not a WebDriverException) before
-        # page_load_timeout is ever reached, and it escapes the WebDriverException
-        # handling as an unhandled internal error. Align the client command timeout
-        # with the configured page-load budget so the component honours its own
-        # page_load_timeout instead of the ambient default.
-        self._driver.command_executor.client_config.timeout = page_load_timeout
         self._main_window_handle = None
         while not self._main_window_handle:
             self._main_window_handle = self._driver.current_window_handle

@@ -35,7 +35,7 @@ class TestGenericCrawlerClientTimeout(unittest.TestCase):
         return crawler, fake_driver, fake_client_config
 
     def test_client_timeout_aligned_to_page_load_timeout(self):
-        crawler, fake_driver, fake_client_config = self._build_crawler(
+        _, fake_driver, fake_client_config = self._build_crawler(
             page_load_timeout=1000, ambient_client_timeout=120
         )
         # The client command timeout must be raised from the ambient 120s cap to the
