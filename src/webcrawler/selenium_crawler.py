@@ -496,6 +496,16 @@ class GenericCrawler:
         self.runid = runid
 
         self._driver = self._get_driver(resolution, download_folder, docker_mode)
+        # Align the Selenium client's own HTTP command read-timeout with the configured
+        # page-load budget. That client timeout otherwise defaults to the runtime's
+        # ambient socket.getdefaulttimeout() (e.g. 120s in the Keboola job runtime),
+        # which can be far shorter than page_load_timeout. A slow-but-valid command that
+        # runs longer than the ambient timeout would raise requests.exceptions.ReadTimeout
+        # (not a WebDriverException), bypassing the WebDriverException handling and
+        # crashing as an unhandled internal error. Setting it here, right after driver
+        # creation, ensures it applies to every subsequent driver command issued in this
+        # constructor and beyond.
+        self._driver.command_executor.client_config.timeout = page_load_timeout
         self._driver.set_page_load_timeout(page_load_timeout)
         self._driver.set_script_timeout(page_load_timeout)
         self._main_window_handle = None
