@@ -8,7 +8,7 @@ dependencies = [
     "keboola-utils>=1.1.0",
     "mock>=4.0.3",
     "nested-lookup>=0.2.25",
-    "pillow>=11.2.1",
+    "pillow>=12.3.0",
     "requests>=2.32.4",
     "selenium>=4.33.0",
 ]
