@@ -81,7 +81,7 @@ class Component(ComponentBase):
 
             for st in crawler_steps:
                 logging.info(st.get(KEY_DESCRIPTION, ""))
-                break_call = self._perform_crawler_actions(st.get(KEY_ACTIONS))
+                break_call = self._perform_crawler_actions(st.get(KEY_ACTIONS), st.get(KEY_DESCRIPTION, ""))
                 if break_call:
                     break
 
@@ -97,8 +97,17 @@ class Component(ComponentBase):
 
         logging.info("Extraction finished")
 
-    def _perform_crawler_actions(self, actions):
+    def _perform_crawler_actions(self, actions, step_description=""):
         break_call = False
+        if actions is None:
+            # A step defined without an 'actions' key (or with an explicit null) is a
+            # configuration mistake. Surface it as a user error instead of letting the
+            # iteration below fail with an opaque "'NoneType' object is not iterable".
+            step_ref = f" '{step_description}'" if step_description else ""
+            raise UserException(
+                f"Configuration step{step_ref} has no '{KEY_ACTIONS}' defined. "
+                f"Add an '{KEY_ACTIONS}' list to this step in the component configuration."
+            )
         for a in actions:
             # KBC bug, empty object as array
             action_params = a.get(KEY_ACTION_PARAMETERS, {})
