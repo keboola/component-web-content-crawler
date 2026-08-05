@@ -6,6 +6,7 @@ import os
 import random
 import time
 from typing import List
+from urllib.parse import urlparse
 
 import requests
 from keboola.component import ComponentBase
@@ -15,6 +16,11 @@ from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
+
+# How long to wait for document.readyState == "complete" after an explicit reload. This is a
+# DOM-readiness check, not a page-load budget, so it is deliberately not tied to the
+# configurable page_load_timeout (which defaults to 1000s).
+PAGE_READY_TIMEOUT = 180
 
 
 class CrawlerAction:
@@ -479,22 +485,21 @@ class CrawlerActionBuilder:
 
 class GenericCrawler:
     def __init__(
-            self,
-            start_url,
-            resolution,
-            download_folder,
-            component_interface: ComponentBase,
-            runid="",
-            docker_mode=True,
-            random_wait_range=None,
-            page_load_timeout=300,
+        self,
+        start_url,
+        resolution,
+        download_folder,
+        component_interface: ComponentBase,
+        runid="",
+        docker_mode=True,
+        random_wait_range=None,
+        page_load_timeout=300,
     ):
         self.start_url = start_url
         self.random_wait_range = random_wait_range
         self.download_folder = download_folder
         self.component_interface = component_interface
         self.runid = runid
-        self.page_load_timeout = page_load_timeout
 
         self._driver = self._get_driver(resolution, download_folder, docker_mode)
         # Align the Selenium client's own HTTP command read-timeout with the configured
@@ -516,10 +521,13 @@ class GenericCrawler:
     def start(self):
         # TODO: validate URL
         self._driver.get(self.start_url)
-        # Wait for page to be ready before returning (needed for cookie loading)
-        from selenium.webdriver.support.ui import WebDriverWait
-        WebDriverWait(self._driver, self.page_load_timeout).until(
-            lambda driver: driver.execute_script("return document.readyState") == "complete"
+        # get() already returns at readyState "complete" under the default pageLoadStrategy, but a
+        # site that navigates via JS right after load flips back to "loading" - cookies added in
+        # that window get rejected against the interim document. Keep the guard, but bound it with
+        # PAGE_READY_TIMEOUT rather than the page-load budget; get() above owns the load itself.
+        WebDriverWait(self._driver, PAGE_READY_TIMEOUT).until(
+            lambda driver: driver.execute_script("return document.readyState") == "complete",
+            message=f"the start URL did not finish loading within {PAGE_READY_TIMEOUT}s",
         )
 
     def get_cookies(self):
@@ -529,10 +537,11 @@ class GenericCrawler:
         if not cookies:
             return
 
-        # Log current page state before adding cookies
-        current_url = self._driver.current_url
+        # Log current page state before adding cookies. Only the host is logged - the full URL
+        # can carry credentials or session tokens in userinfo/query, which must not reach the job log.
+        current_host = urlparse(self._driver.current_url).hostname
         ready_state = self._driver.execute_script("return document.readyState")
-        logging.info(f"Loading cookies - Current URL: {current_url}, readyState: {ready_state}")
+        logging.info(f"Loading cookies - Current host: {current_host}, readyState: {ready_state}")
 
         success_count = 0
         fail_count = 0
@@ -544,8 +553,9 @@ class GenericCrawler:
                 logging.debug(f"Attempting to add cookie '{cookie_name}' with domain '{cookie_domain}'")
                 self._driver.add_cookie(cookie)
                 success_count += 1
-            except Exception as e:
-                # Skip cookies that can't be added (e.g., invalid domain format)
+            except WebDriverException as e:
+                # Skip cookies the browser rejects (e.g., invalid domain format). Narrow to
+                # WebDriverException so a genuine driver/session failure is not mistaken for a bad cookie.
                 fail_count += 1
                 logging.warning(
                     f"Failed to add cookie '{cookie.get('name', 'unknown')}' "
@@ -555,9 +565,12 @@ class GenericCrawler:
 
     def refresh_page(self):
         self._driver.refresh()
-        # Wait for page to be ready after refresh
-        WebDriverWait(self._driver, self.page_load_timeout).until(
-            lambda driver: driver.execute_script("return document.readyState") == "complete"
+        # Wait for page to be ready after refresh. The message is what the user ends up seeing,
+        # since WebDriverWait raises TimeoutException with an empty msg by default.
+        WebDriverWait(self._driver, PAGE_READY_TIMEOUT).until(
+            lambda driver: driver.execute_script("return document.readyState") == "complete",
+            message=f"the page did not finish loading within {PAGE_READY_TIMEOUT}s "
+            "after being reloaded to apply the stored cookies",
         )
 
     def stop(self):

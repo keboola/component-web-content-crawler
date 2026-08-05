@@ -70,9 +70,10 @@ class Component(ComponentBase):
 
         crawler_steps = self._fill_in_user_parameters(crawler_steps, self.configuration.parameters.get(KEY_USER_PARAMS))
 
-        logging.info("Entering first step URL %s", self.web_crawler.start_url)
-        self.web_crawler.start()
         try:
+            logging.info("Entering first step URL %s", self.web_crawler.start_url)
+            self.web_crawler.start()
+
             # set cookies, needs to be done after the domain load
             if self.configuration.parameters.get(KEY_STORE_COOKIES):
                 logging.info("Loading cookies from last run and refreshing the page.")
@@ -92,8 +93,10 @@ class Component(ComponentBase):
                 cookies = self.web_crawler.get_cookies()
                 state = {"cookies": cookies}
                 self.write_state_file(state)
-        except Exception:
-            raise
+        except WebDriverException as e:
+            # Browser failures outside of a named action (start URL load, cookie restore, reload)
+            # would otherwise escape as exit code 2 and be hidden from the user as an internal error.
+            raise UserException(f"Browser session failed: {e.msg}") from e
         finally:
             self.web_crawler.stop()
 
