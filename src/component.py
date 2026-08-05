@@ -55,7 +55,7 @@ class Component(ComponentBase):
             download_folder=self.tables_out_path,
             component_interface=self,
             runid=kbc_runid,
-            docker_mode=self.configuration.parameters.get(KEY_DOCKER_MODE) or True,
+            docker_mode=self.configuration.parameters.get(KEY_DOCKER_MODE, True),
             random_wait_range=self.configuration.parameters.get(KEY_RANDOM_WAIT),
             page_load_timeout=self.configuration.parameters.get(KEY_PAGELOAD_TIMEOUT) or 1000,
         )
@@ -75,9 +75,11 @@ class Component(ComponentBase):
         try:
             # set cookies, needs to be done after the domain load
             if self.configuration.parameters.get(KEY_STORE_COOKIES):
-                logging.info("Loading cookies from last run.")
+                logging.info("Loading cookies from last run and refreshing the page.")
                 last_state = self.get_state_file()
                 self.web_crawler.load_cookies(last_state.get("cookies"))
+                # refresh the page to apply cookies (cookies need to be added after domain is loaded)
+                self.web_crawler.refresh_page()
 
             for st in crawler_steps:
                 logging.info(st.get(KEY_DESCRIPTION, ""))

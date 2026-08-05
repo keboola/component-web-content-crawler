@@ -479,21 +479,22 @@ class CrawlerActionBuilder:
 
 class GenericCrawler:
     def __init__(
-        self,
-        start_url,
-        resolution,
-        download_folder,
-        component_interface: ComponentBase,
-        runid="",
-        docker_mode=True,
-        random_wait_range=None,
-        page_load_timeout=300,
+            self,
+            start_url,
+            resolution,
+            download_folder,
+            component_interface: ComponentBase,
+            runid="",
+            docker_mode=True,
+            random_wait_range=None,
+            page_load_timeout=300,
     ):
         self.start_url = start_url
         self.random_wait_range = random_wait_range
         self.download_folder = download_folder
         self.component_interface = component_interface
         self.runid = runid
+        self.page_load_timeout = page_load_timeout
 
         self._driver = self._get_driver(resolution, download_folder, docker_mode)
         # Align the Selenium client's own HTTP command read-timeout with the configured
@@ -515,6 +516,11 @@ class GenericCrawler:
     def start(self):
         # TODO: validate URL
         self._driver.get(self.start_url)
+        # Wait for page to be ready before returning (needed for cookie loading)
+        from selenium.webdriver.support.ui import WebDriverWait
+        WebDriverWait(self._driver, self.page_load_timeout).until(
+            lambda driver: driver.execute_script("return document.readyState") == "complete"
+        )
 
     def get_cookies(self):
         return self._driver.get_cookies()
@@ -522,8 +528,37 @@ class GenericCrawler:
     def load_cookies(self, cookies):
         if not cookies:
             return
+
+        # Log current page state before adding cookies
+        current_url = self._driver.current_url
+        ready_state = self._driver.execute_script("return document.readyState")
+        logging.info(f"Loading cookies - Current URL: {current_url}, readyState: {ready_state}")
+
+        success_count = 0
+        fail_count = 0
+
         for cookie in cookies:
-            self._driver.add_cookie(cookie)
+            try:
+                cookie_name = cookie.get('name', 'unknown')
+                cookie_domain = cookie.get('domain', 'unknown')
+                logging.debug(f"Attempting to add cookie '{cookie_name}' with domain '{cookie_domain}'")
+                self._driver.add_cookie(cookie)
+                success_count += 1
+            except Exception as e:
+                # Skip cookies that can't be added (e.g., invalid domain format)
+                fail_count += 1
+                logging.warning(
+                    f"Failed to add cookie '{cookie.get('name', 'unknown')}' "
+                    f"with domain '{cookie.get('domain', 'unknown')}': {str(e)}")
+
+        logging.info(f"Cookie loading complete: {success_count} succeeded, {fail_count} failed")
+
+    def refresh_page(self):
+        self._driver.refresh()
+        # Wait for page to be ready after refresh
+        WebDriverWait(self._driver, self.page_load_timeout).until(
+            lambda driver: driver.execute_script("return document.readyState") == "complete"
+        )
 
     def stop(self):
         self._driver.quit()
